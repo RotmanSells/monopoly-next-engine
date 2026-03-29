@@ -948,9 +948,14 @@ export function MonopolyRoomApp() {
               </button>
             </header>
 
-            <div className={styles.amountDisplay}>
-              <div className={styles.amountLabel}>Сумма операции 💵</div>
-              <div className={styles.amountValue}>{formatMoney(modalAmountValue)}</div>
+            <div className={styles.modalKeypad}>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((digit) => (
+                <button key={digit} type="button" className={styles.keypadButton} onClick={() => keypadInput(String(digit))}>
+                  {digit}
+                </button>
+              ))}
+              <button type="button" className={`${styles.keypadButton} ${styles.keypadButtonZero}`} onClick={() => keypadInput("0")}>0</button>
+              <button type="button" className={`${styles.keypadButton} ${styles.keypadButtonClear}`} onClick={keypadClear}>✕</button>
             </div>
 
             <div className={styles.quickAmounts}>
@@ -961,14 +966,9 @@ export function MonopolyRoomApp() {
               ))}
             </div>
 
-            <div className={styles.modalKeypad}>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((digit) => (
-                <button key={digit} type="button" className={styles.keypadButton} onClick={() => keypadInput(String(digit))}>
-                  {digit}
-                </button>
-              ))}
-              <button type="button" className={`${styles.keypadButton} ${styles.keypadButtonZero}`} onClick={() => keypadInput("0")}>0</button>
-              <button type="button" className={`${styles.keypadButton} ${styles.keypadButtonClear}`} onClick={keypadClear}>✕</button>
+            <div className={styles.amountDisplay}>
+              <div className={styles.amountLabel}>Сумма операции 💵</div>
+              <div className={styles.amountValue}>{formatMoney(modalAmountValue)}</div>
             </div>
 
             {modalOperationType === "transfer" && (

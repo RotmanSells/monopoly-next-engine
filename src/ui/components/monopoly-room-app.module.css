@@ -907,6 +907,7 @@
 }
 
 .amountDisplay {
+  margin-top: 12px;
   background: linear-gradient(135deg, var(--accent-green) 0%, var(--accent-blue) 100%);
   border-radius: 18px;
   padding: 16px;
