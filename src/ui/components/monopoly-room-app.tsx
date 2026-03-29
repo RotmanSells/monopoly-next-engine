@@ -24,8 +24,15 @@ type SessionPayload = {
   playerName: string;
 };
 
-type RoomTab = "players" | "history" | "profile";
+type RoomTab = "players" | "history" | "profile" | "calculator";
+type CalculatorOperator = "add" | "subtract" | "multiply" | "divide";
 const ROOM_CODE_REGEX = /^\d{4}$/;
+const CALCULATOR_OPERATOR_SYMBOL: Record<CalculatorOperator, string> = {
+  add: "+",
+  subtract: "−",
+  multiply: "×",
+  divide: "÷",
+};
 
 function parseAmount(value: string): number {
   return Number.parseInt(value.replace(/[\D]/g, ""), 10);
@@ -201,6 +208,8 @@ function tabLabel(tab: RoomTab): string {
       return "Игроки";
     case "history":
       return "История";
+    case "calculator":
+      return "Кальк";
     case "profile":
       return "Профиль";
     default:
@@ -214,6 +223,8 @@ function tabEmoji(tab: RoomTab): string {
       return "👥";
     case "history":
       return "📜";
+    case "calculator":
+      return "🧮";
     case "profile":
       return "🧑";
     default:
@@ -248,7 +259,39 @@ function playerInitial(player: RoomPlayer): string {
   return trimmed[0]?.toUpperCase() ?? "?";
 }
 
-const TABS: RoomTab[] = ["players", "history", "profile"];
+function formatCalculatorOutput(value: number): string {
+  if (!Number.isFinite(value)) {
+    return "Ошибка";
+  }
+
+  const rounded = Math.round(value * 1_000_000) / 1_000_000;
+  if (Math.abs(rounded) >= 1_000_000_000_000) {
+    return rounded.toExponential(3);
+  }
+
+  if (Number.isInteger(rounded)) {
+    return String(rounded);
+  }
+
+  return String(rounded).replace(/(\.\d*?[1-9])0+$/u, "$1").replace(/\.0+$/u, "");
+}
+
+function applyCalculatorOperator(operator: CalculatorOperator, left: number, right: number): number | null {
+  switch (operator) {
+    case "add":
+      return left + right;
+    case "subtract":
+      return left - right;
+    case "multiply":
+      return left * right;
+    case "divide":
+      return right === 0 ? null : left / right;
+    default:
+      return null;
+  }
+}
+
+const TABS: RoomTab[] = ["players", "history", "calculator", "profile"];
 
 export function MonopolyRoomApp() {
   const [roomCodeInput, setRoomCodeInput] = useState("0000");
@@ -270,6 +313,10 @@ export function MonopolyRoomApp() {
   const [message, setMessage] = useState<string | null>(null);
   const [errorText, setErrorText] = useState<string | null>(null);
   const hasSeenSyncedRoomRef = useRef(false);
+  const [calcDisplay, setCalcDisplay] = useState("0");
+  const [calcStoredValue, setCalcStoredValue] = useState<number | null>(null);
+  const [calcPendingOperator, setCalcPendingOperator] = useState<CalculatorOperator | null>(null);
+  const [calcWaitingNextValue, setCalcWaitingNextValue] = useState(false);
 
   const currentPlayer = useMemo(
     () => (currentPlayerId ? getPlayerById(roomState, currentPlayerId) : null),
@@ -342,6 +389,13 @@ export function MonopolyRoomApp() {
   }, [modalAmountInput]);
 
   const modalTitle = useMemo(() => operationTitle(modalOperationType), [modalOperationType]);
+  const calculatorHint = useMemo(() => {
+    if (calcStoredValue === null || calcPendingOperator === null) {
+      return "Милый калькулятор для быстрых расчетов 🐰";
+    }
+
+    return `${formatCalculatorOutput(calcStoredValue)} ${CALCULATOR_OPERATOR_SYMBOL[calcPendingOperator]} …`;
+  }, [calcPendingOperator, calcStoredValue]);
 
   const modalSubtitle = useMemo(() => {
     if (!activeModalPlayer) {
@@ -657,6 +711,166 @@ export function MonopolyRoomApp() {
     }
   }, [activeRoomCode, currentPlayerId, roomState]);
 
+  const resetCalculator = useCallback(() => {
+    setCalcDisplay("0");
+    setCalcStoredValue(null);
+    setCalcPendingOperator(null);
+    setCalcWaitingNextValue(false);
+  }, []);
+
+  const handleCalculatorDigit = useCallback(
+    (digit: string) => {
+      if (calcDisplay === "Ошибка" || calcWaitingNextValue) {
+        setCalcDisplay(digit);
+        setCalcWaitingNextValue(false);
+        return;
+      }
+
+      if (calcDisplay === "0") {
+        setCalcDisplay(digit);
+        return;
+      }
+
+      if (calcDisplay.length >= 14) {
+        return;
+      }
+
+      setCalcDisplay(`${calcDisplay}${digit}`);
+    },
+    [calcDisplay, calcWaitingNextValue],
+  );
+
+  const handleCalculatorDot = useCallback(() => {
+    if (calcDisplay === "Ошибка" || calcWaitingNextValue) {
+      setCalcDisplay("0.");
+      setCalcWaitingNextValue(false);
+      return;
+    }
+
+    if (calcDisplay.includes(".")) {
+      return;
+    }
+
+    setCalcDisplay(`${calcDisplay}.`);
+  }, [calcDisplay, calcWaitingNextValue]);
+
+  const handleCalculatorBackspace = useCallback(() => {
+    if (calcDisplay === "Ошибка" || calcWaitingNextValue) {
+      setCalcDisplay("0");
+      setCalcWaitingNextValue(false);
+      return;
+    }
+
+    if (calcDisplay.length <= 1) {
+      setCalcDisplay("0");
+      return;
+    }
+
+    if (calcDisplay.length === 2 && calcDisplay.startsWith("-")) {
+      setCalcDisplay("0");
+      return;
+    }
+
+    setCalcDisplay(calcDisplay.slice(0, -1));
+  }, [calcDisplay, calcWaitingNextValue]);
+
+  const handleCalculatorToggleSign = useCallback(() => {
+    if (calcDisplay === "Ошибка" || calcDisplay === "0") {
+      return;
+    }
+
+    if (calcDisplay.startsWith("-")) {
+      setCalcDisplay(calcDisplay.slice(1));
+      return;
+    }
+
+    setCalcDisplay(`-${calcDisplay}`);
+  }, [calcDisplay]);
+
+  const handleCalculatorPercent = useCallback(() => {
+    if (calcDisplay === "Ошибка") {
+      return;
+    }
+
+    const value = Number(calcDisplay);
+    if (!Number.isFinite(value)) {
+      return;
+    }
+
+    setCalcDisplay(formatCalculatorOutput(value / 100));
+    setCalcWaitingNextValue(false);
+  }, [calcDisplay]);
+
+  const handleCalculatorOperator = useCallback(
+    (nextOperator: CalculatorOperator) => {
+      if (calcDisplay === "Ошибка") {
+        return;
+      }
+
+      const inputValue = Number(calcDisplay);
+      if (!Number.isFinite(inputValue)) {
+        return;
+      }
+
+      if (calcStoredValue === null) {
+        setCalcStoredValue(inputValue);
+        setCalcPendingOperator(nextOperator);
+        setCalcWaitingNextValue(true);
+        return;
+      }
+
+      if (!calcPendingOperator || calcWaitingNextValue) {
+        setCalcPendingOperator(nextOperator);
+        setCalcWaitingNextValue(true);
+        return;
+      }
+
+      const computed = applyCalculatorOperator(calcPendingOperator, calcStoredValue, inputValue);
+      if (computed === null) {
+        setCalcDisplay("Ошибка");
+        setCalcStoredValue(null);
+        setCalcPendingOperator(null);
+        setCalcWaitingNextValue(true);
+        return;
+      }
+
+      setCalcDisplay(formatCalculatorOutput(computed));
+      setCalcStoredValue(computed);
+      setCalcPendingOperator(nextOperator);
+      setCalcWaitingNextValue(true);
+    },
+    [calcDisplay, calcPendingOperator, calcStoredValue, calcWaitingNextValue],
+  );
+
+  const handleCalculatorEquals = useCallback(() => {
+    if (calcDisplay === "Ошибка") {
+      return;
+    }
+
+    if (calcStoredValue === null || calcPendingOperator === null || calcWaitingNextValue) {
+      return;
+    }
+
+    const inputValue = Number(calcDisplay);
+    if (!Number.isFinite(inputValue)) {
+      return;
+    }
+
+    const computed = applyCalculatorOperator(calcPendingOperator, calcStoredValue, inputValue);
+    if (computed === null) {
+      setCalcDisplay("Ошибка");
+      setCalcStoredValue(null);
+      setCalcPendingOperator(null);
+      setCalcWaitingNextValue(true);
+      return;
+    }
+
+    setCalcDisplay(formatCalculatorOutput(computed));
+    setCalcStoredValue(null);
+    setCalcPendingOperator(null);
+    setCalcWaitingNextValue(true);
+  }, [calcDisplay, calcPendingOperator, calcStoredValue, calcWaitingNextValue]);
+
   if (!activeRoomCode || !currentPlayerId || !roomState) {
     return (
       <main className={styles.page}>
@@ -877,6 +1091,113 @@ export function MonopolyRoomApp() {
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {activeTab === "calculator" && (
+            <div className={styles.calculatorSection}>
+              <div className={styles.sectionTitle}>Калькулятор 🧮</div>
+              <article className={styles.calculatorCard}>
+                <div className={styles.calculatorHead}>
+                  <div className={styles.calculatorMascot}>🐰✨</div>
+                  <div className={styles.calculatorHint}>{calculatorHint}</div>
+                </div>
+
+                <div className={styles.calculatorScreen}>
+                  <div className={styles.calculatorScreenLabel}>Сумма</div>
+                  <div className={styles.calculatorDisplay}>{calcDisplay}</div>
+                </div>
+
+                <div className={styles.calculatorGrid}>
+                  <button type="button" className={`${styles.calcButton} ${styles.calcButtonFunction}`} onClick={resetCalculator}>
+                    AC
+                  </button>
+                  <button type="button" className={`${styles.calcButton} ${styles.calcButtonFunction}`} onClick={handleCalculatorBackspace}>
+                    ⌫
+                  </button>
+                  <button type="button" className={`${styles.calcButton} ${styles.calcButtonFunction}`} onClick={handleCalculatorPercent}>
+                    %
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.calcButton} ${styles.calcButtonOperator}`}
+                    onClick={() => handleCalculatorOperator("divide")}
+                  >
+                    ÷
+                  </button>
+
+                  {[7, 8, 9].map((digit) => (
+                    <button
+                      key={digit}
+                      type="button"
+                      className={`${styles.calcButton} ${styles.calcButtonNumber}`}
+                      onClick={() => handleCalculatorDigit(String(digit))}
+                    >
+                      {digit}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className={`${styles.calcButton} ${styles.calcButtonOperator}`}
+                    onClick={() => handleCalculatorOperator("multiply")}
+                  >
+                    ×
+                  </button>
+
+                  {[4, 5, 6].map((digit) => (
+                    <button
+                      key={digit}
+                      type="button"
+                      className={`${styles.calcButton} ${styles.calcButtonNumber}`}
+                      onClick={() => handleCalculatorDigit(String(digit))}
+                    >
+                      {digit}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className={`${styles.calcButton} ${styles.calcButtonOperator}`}
+                    onClick={() => handleCalculatorOperator("subtract")}
+                  >
+                    −
+                  </button>
+
+                  {[1, 2, 3].map((digit) => (
+                    <button
+                      key={digit}
+                      type="button"
+                      className={`${styles.calcButton} ${styles.calcButtonNumber}`}
+                      onClick={() => handleCalculatorDigit(String(digit))}
+                    >
+                      {digit}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className={`${styles.calcButton} ${styles.calcButtonOperator}`}
+                    onClick={() => handleCalculatorOperator("add")}
+                  >
+                    +
+                  </button>
+
+                  <button type="button" className={`${styles.calcButton} ${styles.calcButtonFunction}`} onClick={handleCalculatorToggleSign}>
+                    ±
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.calcButton} ${styles.calcButtonNumber}`}
+                    onClick={() => handleCalculatorDigit("0")}
+                  >
+                    0
+                  </button>
+                  <button type="button" className={`${styles.calcButton} ${styles.calcButtonNumber}`} onClick={handleCalculatorDot}>
+                    .
+                  </button>
+                  <button type="button" className={`${styles.calcButton} ${styles.calcButtonEqual}`} onClick={handleCalculatorEquals}>
+                    =
+                  </button>
+                </div>
+              </article>
             </div>
           )}
 
