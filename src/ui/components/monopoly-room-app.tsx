@@ -8,6 +8,7 @@ import {
   generateRoomCode,
   joinRoom,
   leaveRoom,
+  resetRoom,
   subscribeToRoom,
 } from "@/src/application/room/room-engine";
 import styles from "@/src/ui/components/monopoly-room-app.module.css";
@@ -41,24 +42,24 @@ function getPlayerById(room: RoomState | null, playerId: string): RoomPlayer | n
 }
 
 function persistSession(payload: SessionPayload | null): void {
-  if (typeof window === "undefined") {
+  if (typeof window === "undefined" || typeof localStorage === "undefined") {
     return;
   }
 
   if (payload === null) {
-    sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    localStorage.removeItem(SESSION_STORAGE_KEY);
     return;
   }
 
-  sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(payload));
+  localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(payload));
 }
 
 function loadSession(): SessionPayload | null {
-  if (typeof window === "undefined") {
+  if (typeof window === "undefined" || typeof localStorage === "undefined") {
     return null;
   }
 
-  const rawPayload = sessionStorage.getItem(SESSION_STORAGE_KEY);
+  const rawPayload = localStorage.getItem(SESSION_STORAGE_KEY);
   if (!rawPayload) {
     return null;
   }
@@ -82,13 +83,13 @@ function loadSession(): SessionPayload | null {
       ) {
         return candidate;
       }
-      sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      localStorage.removeItem(SESSION_STORAGE_KEY);
       return null;
     }
-    sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    localStorage.removeItem(SESSION_STORAGE_KEY);
     return null;
   } catch {
-    sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    localStorage.removeItem(SESSION_STORAGE_KEY);
     return null;
   }
 }
@@ -316,7 +317,14 @@ export function MonopolyRoomApp() {
       setRoomState(nextRoom);
 
       if (!nextRoom) {
-        setErrorText("Комната больше недоступна.");
+        setMessage("Комната очищена. Создайте новую или подключитесь снова.");
+        persistSession(null);
+        setActiveRoomCode(null);
+        setCurrentPlayerId(null);
+        setCurrentPlayerName(null);
+        setRoomState(null);
+        setPlayerNameInput("");
+        setRoomCodeInput(generateRoomCode());
         return;
       }
 
@@ -344,20 +352,6 @@ export function MonopolyRoomApp() {
       setCurrentPlayerName(savedSession.playerName);
     });
   }, []);
-
-  useEffect(() => {
-    if (!activeRoomCode || !currentPlayerId) {
-      return;
-    }
-
-    const handleUnload = () => {
-      leaveRoom(activeRoomCode, currentPlayerId);
-      persistSession(null);
-    };
-
-    window.addEventListener("beforeunload", handleUnload);
-    return () => window.removeEventListener("beforeunload", handleUnload);
-  }, [activeRoomCode, currentPlayerId]);
 
   useEffect(() => {
     if (!message && !errorText) {
@@ -428,6 +422,40 @@ export function MonopolyRoomApp() {
       .catch(() => {
         setErrorText("Не удалось скопировать код комнаты");
       });
+  }, [activeRoomCode]);
+
+  const handleResetRoom = useCallback(() => {
+    if (!activeRoomCode) {
+      return;
+    }
+
+    const isConfirmed = window.confirm(
+      `Сбросить комнату ${activeRoomCode}? Это удалит весь прогресс и игроков у всех устройств.`,
+    );
+
+    if (!isConfirmed) {
+      return;
+    }
+
+    try {
+      resetRoom(activeRoomCode);
+      persistSession(null);
+      setActiveRoomCode(null);
+      setCurrentPlayerId(null);
+      setCurrentPlayerName(null);
+      setRoomState(null);
+      setPlayerNameInput("");
+      setRoomCodeInput(generateRoomCode());
+      setModalPlayerId("");
+      setModalRecipientId("");
+      setModalOperationType("add");
+      setModalAmountInput("0");
+      setOperationModalOpen(false);
+      setMessage(`Комната ${activeRoomCode} очищена`);
+      setErrorText(null);
+    } catch (error) {
+      setErrorText(mapDomainError(error));
+    }
   }, [activeRoomCode]);
 
   const openOperationModal = useCallback(
@@ -618,6 +646,9 @@ export function MonopolyRoomApp() {
             <div className={styles.playerCount}>👥 {players.length} игрока(ов)</div>
           </div>
           <div className={styles.headerActions}>
+            <button type="button" className={styles.resetButton} onClick={handleResetRoom} title="Сбросить комнату">
+              🔄
+            </button>
             <button type="button" className={styles.codeButton} onClick={handleCopyRoomCode}>
               📋 Код
             </button>

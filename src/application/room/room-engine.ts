@@ -5,6 +5,7 @@ import {
   appendLeaveEvent,
   appendOperationEvent,
   getRealtimeRoomState,
+  resetRealtimeRoom,
   subscribeToRealtimeRoom,
 } from "@/src/infrastructure/room/realtime-room-store";
 
@@ -78,4 +79,9 @@ export function getRoom(roomCodeInput: string): RoomState | null {
 export function subscribeToRoom(roomCodeInput: string, listener: (room: RoomState | null) => void): () => void {
   const roomCode = assertRoomCode(roomCodeInput);
   return subscribeToRealtimeRoom(roomCode, listener);
+}
+
+export function resetRoom(roomCodeInput: string): void {
+  const roomCode = assertRoomCode(roomCodeInput);
+  resetRealtimeRoom(roomCode);
 }

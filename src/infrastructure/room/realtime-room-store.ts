@@ -340,6 +340,17 @@ export function appendOperationEvent(roomCode: string, payload: RoomOperationPay
   return buildRoomStateFromEvents(roomCode, parsedEvents);
 }
 
+export function resetRealtimeRoom(roomCode: string): void {
+  const channel = ensureChannel(roomCode);
+
+  channel.doc.transact(() => {
+    const totalEvents = channel.events.length;
+    if (totalEvents > 0) {
+      channel.events.delete(0, totalEvents);
+    }
+  });
+}
+
 export function getRealtimeRoomState(roomCode: string): RoomState | null {
   const channel = ensureChannel(roomCode);
   const parsedEvents = channel.events
