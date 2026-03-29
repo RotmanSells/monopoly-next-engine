@@ -177,6 +177,24 @@ function operationIcon(type: RoomOperationType): string {
   }
 }
 
+function playerLabelById(room: RoomState | null, playerId: string): string {
+  const playerName = room?.players[playerId]?.name;
+  if (playerName) {
+    return playerName;
+  }
+
+  return `Игрок ${playerId.slice(-4)}`;
+}
+
+function historyActorDescription(room: RoomState | null, item: { playerId: string; recipientPlayerId?: string }): string {
+  const actor = playerLabelById(room, item.playerId);
+  if (item.recipientPlayerId) {
+    const recipient = playerLabelById(room, item.recipientPlayerId);
+    return `${actor} → ${recipient}`;
+  }
+  return actor;
+}
+
 function tabLabel(tab: RoomTab): string {
   switch (tab) {
     case "players":
@@ -844,7 +862,7 @@ export function MonopolyRoomApp() {
                         <div className={styles.historyType}>
                           {operationIcon(item.type)} {operationTitle(item.type)}
                         </div>
-                        <div className={styles.historyDescription}>{item.description}</div>
+                        <div className={styles.historyDescription}>{historyActorDescription(roomState, item)}</div>
                         <div className={styles.historyTime}>
                           {new Date(item.timestamp).toLocaleTimeString("ru-RU", {
                             hour: "2-digit",
