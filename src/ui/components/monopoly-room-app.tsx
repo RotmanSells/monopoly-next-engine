@@ -14,6 +14,7 @@ import {
 import styles from "@/src/ui/components/monopoly-room-app.module.css";
 
 const SESSION_STORAGE_KEY = "monopoly-room-session";
+const PLAYER_NAME_STORAGE_KEY = "monopoly-player-name";
 const QUICK_AMOUNTS = [50, 100, 200, 500, 1000] as const;
 const PLAYER_EMOJIS = ["🦊", "🐼", "🐯", "🐵", "🦁", "🐨", "🐸", "🐙", "🦄", "🐬"] as const;
 
@@ -92,6 +93,32 @@ function loadSession(): SessionPayload | null {
     localStorage.removeItem(SESSION_STORAGE_KEY);
     return null;
   }
+}
+
+function persistPreferredPlayerName(name: string): void {
+  if (typeof window === "undefined" || typeof localStorage === "undefined") {
+    return;
+  }
+
+  const normalized = name.replace(/\s+/g, " ").trim().slice(0, 18);
+  if (!normalized) {
+    return;
+  }
+
+  localStorage.setItem(PLAYER_NAME_STORAGE_KEY, normalized);
+}
+
+function loadPreferredPlayerName(): string {
+  if (typeof window === "undefined" || typeof localStorage === "undefined") {
+    return "";
+  }
+
+  const rawName = localStorage.getItem(PLAYER_NAME_STORAGE_KEY);
+  if (!rawName) {
+    return "";
+  }
+
+  return rawName.replace(/\s+/g, " ").trim().slice(0, 18);
 }
 
 function formatMoney(amount: number): string {
@@ -342,6 +369,14 @@ export function MonopolyRoomApp() {
 
   useEffect(() => {
     const savedSession = loadSession();
+    const preferredPlayerName = loadPreferredPlayerName();
+
+    if (preferredPlayerName) {
+      startTransition(() => {
+        setPlayerNameInput(preferredPlayerName);
+      });
+    }
+
     if (!savedSession) {
       return;
     }
@@ -350,6 +385,7 @@ export function MonopolyRoomApp() {
       setActiveRoomCode(savedSession.roomCode);
       setCurrentPlayerId(savedSession.playerId);
       setCurrentPlayerName(savedSession.playerName);
+      setPlayerNameInput(savedSession.playerName);
     });
   }, []);
 
@@ -371,16 +407,18 @@ export function MonopolyRoomApp() {
 
     try {
       const { roomCode, playerId, room } = joinRoom(playerNameInput, roomCodeInput);
+      const normalizedName = playerNameInput.trim();
       setActiveRoomCode(roomCode);
       setCurrentPlayerId(playerId);
-      setCurrentPlayerName(playerNameInput.trim());
+      setCurrentPlayerName(normalizedName);
       setRoomState(room);
       setModalPlayerId(playerId);
       setActiveTab("players");
+      persistPreferredPlayerName(normalizedName);
       persistSession({
         roomCode,
         playerId,
-        playerName: playerNameInput.trim(),
+        playerName: normalizedName,
       });
       setMessage(`Добро пожаловать в комнату ${roomCode}`);
     } catch (error) {
@@ -400,7 +438,6 @@ export function MonopolyRoomApp() {
     setCurrentPlayerName(null);
     setRoomState(null);
     setRoomCodeInput(generateRoomCode());
-    setPlayerNameInput("");
     setModalPlayerId("");
     setModalRecipientId("");
     setModalOperationType("add");
@@ -444,7 +481,6 @@ export function MonopolyRoomApp() {
       setCurrentPlayerId(null);
       setCurrentPlayerName(null);
       setRoomState(null);
-      setPlayerNameInput("");
       setRoomCodeInput(generateRoomCode());
       setModalPlayerId("");
       setModalRecipientId("");
@@ -603,7 +639,11 @@ export function MonopolyRoomApp() {
           <input
             className={styles.nameInput}
             value={playerNameInput}
-            onChange={(event) => setPlayerNameInput(event.target.value)}
+            onChange={(event) => {
+              const nextName = event.target.value.slice(0, 18);
+              setPlayerNameInput(nextName);
+              persistPreferredPlayerName(nextName);
+            }}
             placeholder="Ваше имя"
             maxLength={18}
           />
