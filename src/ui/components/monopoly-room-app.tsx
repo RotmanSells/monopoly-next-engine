@@ -792,7 +792,7 @@ export function MonopolyRoomApp() {
                   return (
                     <article
                       key={player.id}
-                      className={`${styles.playerCard} ${isCurrent ? styles.playerCardCurrentUser : ""}`}
+                      className={`${styles.playerCard} ${isCurrent ? styles.playerCardCurrentUser : styles.playerCardOther}`}
                     >
                       <div className={styles.playerHeader}>
                         <div className={styles.playerInfo}>

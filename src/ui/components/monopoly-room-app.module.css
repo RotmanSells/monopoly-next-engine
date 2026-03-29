@@ -78,6 +78,7 @@
   align-items: center;
   padding: 20px;
   text-align: center;
+  overflow: hidden;
 }
 
 .logo {
@@ -161,6 +162,10 @@
   cursor: pointer;
   transition: transform 0.15s ease, background-color 0.15s ease, color 0.15s ease;
   box-shadow: var(--shadow-sm);
+}
+
+.customKeypad .keypadButton {
+  min-height: 52px;
 }
 
 .keypadButton:active {
@@ -481,6 +486,11 @@
   scrollbar-color: #ccd5e0 transparent;
 }
 
+.playerList {
+  overflow: hidden;
+  gap: 8px;
+}
+
 .playerCard {
   background: var(--bg-card);
   border-radius: 18px;
@@ -493,6 +503,37 @@
 .playerCardCurrentUser {
   border-color: var(--accent-green);
   box-shadow: 0 0 0 2px var(--accent-green-soft), var(--shadow);
+}
+
+.playerCardOther {
+  padding: 10px 12px;
+}
+
+.playerCardOther .playerHeader {
+  margin-bottom: 8px;
+}
+
+.playerCardOther .playerAvatar {
+  width: 36px;
+  height: 36px;
+}
+
+.playerCardOther .playerAvatar span {
+  font-size: 0.9rem;
+}
+
+.playerCardOther .playerAvatar small {
+  font-size: 0.75rem;
+  right: -3px;
+  bottom: -5px;
+}
+
+.playerCardOther .playerName {
+  font-size: 0.92rem;
+}
+
+.playerCardOther .balanceAmount {
+  font-size: 1.15rem;
 }
 
 @keyframes fadeInUp {
@@ -656,8 +697,8 @@
 .transferQuickButton {
   width: 100%;
   border-radius: 12px;
-  padding: 12px 10px;
-  font-size: 0.95rem;
+  padding: 9px 10px;
+  font-size: 0.85rem;
   font-weight: 800;
 }
 
@@ -724,14 +765,14 @@
 
 .profileCard {
   min-height: 0;
-  overflow-y: auto;
+  overflow: hidden;
   border-radius: 20px;
   border: 1px solid var(--bg-secondary);
   background: var(--bg-card);
   box-shadow: var(--shadow);
-  padding: 18px;
+  padding: 14px;
   display: grid;
-  gap: 12px;
+  gap: 10px;
   align-content: start;
 }
 
@@ -743,29 +784,32 @@
 
 .profileName {
   text-align: center;
-  font-size: 1.2rem;
+  font-size: 1.05rem;
   font-weight: 800;
 }
 
 .profileMeta {
   text-align: center;
   color: var(--text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.78rem;
 }
 
 .profileStats {
   display: grid;
-  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
 }
 
 .profileStatItem {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  align-content: center;
   background: var(--bg-card-hover);
   border: 1px solid var(--bg-secondary);
   border-radius: 12px;
-  padding: 10px 12px;
+  padding: 8px 6px;
+  text-align: center;
 }
 
 .profileStatItem span {
@@ -780,17 +824,17 @@
 
 .profileQuickActions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
 }
 
 .profileQuickButton {
   border-radius: 12px;
   background: var(--bg-secondary);
   color: var(--text-primary);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  padding: 9px 6px;
+  padding: 8px 6px;
   transition: transform 0.15s ease;
 }
 
@@ -1129,10 +1173,352 @@
   }
 
   .profileQuickActions {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .modalContent {
     padding: 16px 12px;
+  }
+}
+
+@media (max-height: 860px) {
+  .loginScreen {
+    justify-content: flex-start;
+    padding: 10px 16px 12px;
+    gap: 8px;
+  }
+
+  .logo {
+    font-size: 1.7rem;
+  }
+
+  .logoSubtitle {
+    margin: 2px 0 10px;
+    font-size: 0.82rem;
+  }
+
+  .roomCodeDisplay {
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    border-radius: 16px;
+  }
+
+  .roomCodeLabel {
+    margin-bottom: 4px;
+    font-size: 0.74rem;
+  }
+
+  .roomCodeValue {
+    font-size: 1.48rem;
+    letter-spacing: 3px;
+  }
+
+  .customKeypad {
+    gap: 7px;
+    margin-bottom: 8px;
+  }
+
+  .customKeypad .keypadButton {
+    padding: 8px 6px;
+    min-height: 42px;
+    font-size: 1.1rem;
+    border-radius: 12px;
+  }
+
+  .roomCodeInput,
+  .nameInput {
+    margin-bottom: 8px;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
+
+  .loginActionsRow {
+    gap: 8px;
+  }
+
+  .secondaryGhostButton,
+  .joinButton {
+    padding: 10px;
+    font-size: 0.9rem;
+  }
+
+  .inlineMessage,
+  .inlineError {
+    margin-top: 8px;
+    padding: 8px;
+    font-size: 0.8rem;
+  }
+
+  .gameHeader {
+    padding: 9px 12px;
+  }
+
+  .fundsOverview {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .fundCard {
+    padding: 10px 10px;
+  }
+
+  .fundAmount {
+    font-size: 1.1rem;
+  }
+
+  .tabContent {
+    padding: 0 12px 8px;
+  }
+
+  .sectionTitle {
+    margin-bottom: 7px;
+    font-size: 0.76rem;
+  }
+
+  .playerCard {
+    padding: 10px;
+  }
+
+  .playerHeader {
+    margin-bottom: 8px;
+  }
+
+  .playerAvatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .balanceAmount {
+    font-size: 1.2rem;
+  }
+
+  .extraButton {
+    padding: 7px 6px;
+    font-size: 0.72rem;
+  }
+
+  .bottomNav {
+    padding-top: 8px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    gap: 6px;
+  }
+
+  .navButton {
+    padding: 6px 4px;
+    font-size: 0.68rem;
+  }
+
+  .navIcon {
+    font-size: 1rem;
+  }
+
+  .profileCard {
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .profileAvatar {
+    width: 52px;
+    height: 52px;
+  }
+
+  .profileName {
+    font-size: 0.98rem;
+  }
+
+  .profileMeta {
+    font-size: 0.72rem;
+  }
+
+  .profileStatItem {
+    padding: 7px 5px;
+  }
+
+  .profileStatItem span {
+    font-size: 0.72rem;
+  }
+
+  .profileStatItem strong {
+    font-size: 0.82rem;
+  }
+
+  .profileQuickActions {
+    gap: 5px;
+  }
+
+  .profileQuickButton {
+    padding: 7px 4px;
+    font-size: 0.68rem;
+  }
+}
+
+@media (max-height: 760px) {
+  .loginScreen {
+    padding: 8px 12px 10px;
+    gap: 6px;
+  }
+
+  .logo {
+    font-size: 1.45rem;
+  }
+
+  .logoSubtitle {
+    margin-bottom: 6px;
+    font-size: 0.76rem;
+  }
+
+  .roomCodeDisplay {
+    border-radius: 14px;
+    padding: 10px 12px;
+    margin-bottom: 6px;
+  }
+
+  .roomCodeValue {
+    font-size: 1.28rem;
+    letter-spacing: 2px;
+  }
+
+  .customKeypad {
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  .customKeypad .keypadButton {
+    min-height: 36px;
+    font-size: 0.98rem;
+    padding: 6px 4px;
+  }
+
+  .roomCodeInput,
+  .nameInput {
+    font-size: 0.84rem;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+  }
+
+  .secondaryGhostButton,
+  .joinButton {
+    padding: 8px;
+    font-size: 0.82rem;
+  }
+
+  .profileAvatar {
+    width: 46px;
+    height: 46px;
+  }
+
+  .profileCard {
+    padding: 10px;
+    gap: 6px;
+  }
+
+  .profileStats {
+    gap: 5px;
+  }
+
+  .profileStatItem {
+    padding: 6px 4px;
+  }
+
+  .profileStatItem span {
+    font-size: 0.68rem;
+  }
+
+  .profileStatItem strong {
+    font-size: 0.78rem;
+  }
+
+  .profileQuickButton {
+    font-size: 0.64rem;
+    padding: 6px 4px;
+  }
+}
+
+@media (max-height: 680px) {
+  .gameHeader {
+    padding: 7px 10px;
+  }
+
+  .fundsOverview {
+    padding: 6px 10px;
+    gap: 6px;
+  }
+
+  .fundIcon {
+    font-size: 1.2rem;
+    margin-bottom: 2px;
+  }
+
+  .fundLabel {
+    font-size: 0.68rem;
+  }
+
+  .fundAmount {
+    margin-top: 2px;
+    font-size: 0.94rem;
+  }
+
+  .tabContent {
+    padding: 0 10px 6px;
+  }
+
+  .sectionTitle {
+    margin-bottom: 6px;
+    font-size: 0.7rem;
+  }
+
+  .playerCard {
+    padding: 8px;
+  }
+
+  .playerCardOther {
+    padding: 8px 9px;
+  }
+
+  .playerAvatar {
+    width: 34px;
+    height: 34px;
+  }
+
+  .playerAvatar span {
+    font-size: 0.86rem;
+  }
+
+  .playerName {
+    font-size: 0.9rem;
+  }
+
+  .balanceAmount {
+    font-size: 1rem;
+  }
+
+  .extraActions {
+    gap: 5px;
+  }
+
+  .extraButton {
+    font-size: 0.66rem;
+    padding: 6px 4px;
+  }
+
+  .transferQuickButton {
+    padding: 7px 8px;
+    font-size: 0.76rem;
+  }
+
+  .bottomNav {
+    padding-top: 6px;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+    gap: 4px;
+  }
+
+  .navButton {
+    padding: 5px 3px;
+    gap: 2px;
+    font-size: 0.62rem;
+  }
+
+  .navIcon {
+    font-size: 0.88rem;
   }
 }
