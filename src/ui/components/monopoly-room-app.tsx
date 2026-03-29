@@ -17,13 +17,6 @@ const SESSION_STORAGE_KEY = "monopoly-room-session";
 const PLAYER_NAME_STORAGE_KEY = "monopoly-player-name";
 const QUICK_AMOUNTS = [50, 100, 200, 500, 1000] as const;
 const PLAYER_EMOJIS = ["🦊", "🐼", "🐯", "🐵", "🦁", "🐨", "🐸", "🐙", "🦄", "🐬"] as const;
-const MOOD_CHIPS = [
-  "🎲 Азарт",
-  "😎 Уверенность",
-  "💸 Большие сделки",
-  "🔥 Горячая партия",
-  "🤝 Честная игра",
-] as const;
 
 type SessionPayload = {
   roomCode: string;
@@ -671,17 +664,10 @@ export function MonopolyRoomApp() {
 
         <section className={styles.loginScreen}>
           <h1 className={styles.logo}>MONOPOLY</h1>
-          <p className={styles.logoSubtitle}>Money Tracker</p>
-          <div className={styles.moodPanel}>
-            {MOOD_CHIPS.map((chip) => (
-              <span key={chip} className={styles.moodChip}>
-                {chip}
-              </span>
-            ))}
-          </div>
+          <p className={styles.logoSubtitle}>Money Tracker 🎲💸</p>
 
           <div className={styles.roomCodeDisplay}>
-            <div className={styles.roomCodeLabel}>Код комнаты</div>
+            <div className={styles.roomCodeLabel}>Код комнаты 🔢</div>
             <div className={styles.roomCodeValue}>{displayRoomCode(roomCodeInput)}</div>
           </div>
 
@@ -727,7 +713,7 @@ export function MonopolyRoomApp() {
               setPlayerNameInput(nextName);
               persistPreferredPlayerName(nextName);
             }}
-            placeholder="Ваше имя"
+            placeholder="Ваше имя 🙂"
             maxLength={18}
           />
 
@@ -740,7 +726,7 @@ export function MonopolyRoomApp() {
               🎲 Новый код
             </button>
             <button type="button" className={styles.joinButton} onClick={handleJoinRoom}>
-              Войти в игру
+              Войти в игру 🚀
             </button>
           </div>
 
@@ -794,21 +780,10 @@ export function MonopolyRoomApp() {
           </article>
         </section>
 
-        <section className={styles.gameMoodRow}>
-          <div className={styles.gameMoodTitle}>✨ Настроение партии</div>
-          <div className={styles.gameMoodChips}>
-            {MOOD_CHIPS.map((chip) => (
-              <span key={chip} className={styles.moodChip}>
-                {chip}
-              </span>
-            ))}
-          </div>
-        </section>
-
         <section className={styles.tabContent}>
           {activeTab === "players" && (
             <div className={styles.playersSection}>
-              <div className={styles.sectionTitle}>Профили игроков</div>
+              <div className={styles.sectionTitle}>Профили игроков 👥</div>
               <div className={styles.playerList}>
                 {orderedPlayers.map((player) => {
                   const isCurrent = player.id === currentPlayerId;
@@ -833,7 +808,7 @@ export function MonopolyRoomApp() {
                           </div>
                         </div>
                         <div className={styles.playerBalance}>
-                          <div className={styles.balanceLabel}>Баланс</div>
+                          <div className={styles.balanceLabel}>Баланс 💰</div>
                           <div className={`${styles.balanceAmount} ${balanceClass}`}>{formatMoney(player.balance)}</div>
                         </div>
                       </div>
@@ -875,9 +850,9 @@ export function MonopolyRoomApp() {
 
           {activeTab === "history" && (
             <div className={styles.historySection}>
-              <div className={styles.sectionTitle}>История операций</div>
+              <div className={styles.sectionTitle}>История операций 📜</div>
               <div className={styles.historyList}>
-                {historyItems.length === 0 && <div className={styles.emptyState}>Операций пока нет.</div>}
+                {historyItems.length === 0 && <div className={styles.emptyState}>Операций пока нет 🙂</div>}
 
                 {orderedHistoryItems.map((item) => {
                   const isPositive = operationSign(item.type) === "+";
@@ -907,14 +882,14 @@ export function MonopolyRoomApp() {
 
           {activeTab === "profile" && currentPlayer && (
             <div className={styles.profileSection}>
-              <div className={styles.sectionTitle}>Мой профиль</div>
+              <div className={styles.sectionTitle}>Мой профиль 🧑</div>
               <article className={styles.profileCard}>
                 <div className={styles.profileAvatar}>
                   <span>{playerInitial(currentPlayer)}</span>
                   <small>{playerEmoji(currentPlayer)}</small>
                 </div>
                 <div className={styles.profileName}>{currentPlayerName}</div>
-                <div className={styles.profileMeta}>Ваш персональный кабинет в комнате {activeRoomCode}</div>
+                <div className={styles.profileMeta}>Ваш персональный кабинет в комнате {activeRoomCode} 🏠</div>
                 <div className={styles.profileStats}>
                   <div className={styles.profileStatItem}>
                     <span>Баланс</span>
@@ -974,7 +949,7 @@ export function MonopolyRoomApp() {
             </header>
 
             <div className={styles.amountDisplay}>
-              <div className={styles.amountLabel}>Сумма операции</div>
+              <div className={styles.amountLabel}>Сумма операции 💵</div>
               <div className={styles.amountValue}>{formatMoney(modalAmountValue)}</div>
             </div>
 
@@ -998,7 +973,7 @@ export function MonopolyRoomApp() {
 
             {modalOperationType === "transfer" && (
               <section className={styles.recipientSection}>
-                <h3 className={styles.recipientTitle}>Получатель</h3>
+                <h3 className={styles.recipientTitle}>Получатель 🎯</h3>
                 <div className={styles.recipientList}>
                   {modalRecipients.map((recipient) => (
                     <button
