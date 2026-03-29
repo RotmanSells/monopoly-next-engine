@@ -17,6 +17,13 @@ const SESSION_STORAGE_KEY = "monopoly-room-session";
 const PLAYER_NAME_STORAGE_KEY = "monopoly-player-name";
 const QUICK_AMOUNTS = [50, 100, 200, 500, 1000] as const;
 const PLAYER_EMOJIS = ["🦊", "🐼", "🐯", "🐵", "🦁", "🐨", "🐸", "🐙", "🦄", "🐬"] as const;
+const MOOD_CHIPS = [
+  "🎲 Азарт",
+  "😎 Уверенность",
+  "💸 Большие сделки",
+  "🔥 Горячая партия",
+  "🤝 Честная игра",
+] as const;
 
 type SessionPayload = {
   roomCode: string;
@@ -665,6 +672,13 @@ export function MonopolyRoomApp() {
         <section className={styles.loginScreen}>
           <h1 className={styles.logo}>MONOPOLY</h1>
           <p className={styles.logoSubtitle}>Money Tracker</p>
+          <div className={styles.moodPanel}>
+            {MOOD_CHIPS.map((chip) => (
+              <span key={chip} className={styles.moodChip}>
+                {chip}
+              </span>
+            ))}
+          </div>
 
           <div className={styles.roomCodeDisplay}>
             <div className={styles.roomCodeLabel}>Код комнаты</div>
@@ -778,6 +792,17 @@ export function MonopolyRoomApp() {
             <div className={styles.fundLabel}>Общак</div>
             <div className={styles.fundAmount}>{formatMoney(roomState.pool)}</div>
           </article>
+        </section>
+
+        <section className={styles.gameMoodRow}>
+          <div className={styles.gameMoodTitle}>✨ Настроение партии</div>
+          <div className={styles.gameMoodChips}>
+            {MOOD_CHIPS.map((chip) => (
+              <span key={chip} className={styles.moodChip}>
+                {chip}
+              </span>
+            ))}
+          </div>
         </section>
 
         <section className={styles.tabContent}>
