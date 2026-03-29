@@ -20,10 +20,7 @@ type SessionPayload = {
   playerName: string;
 };
 
-type DialogState = {
-  type: RoomOperationType;
-  playerId: string;
-};
+type RoomTab = "overview" | "players" | "actions" | "history";
 
 function parseAmount(value: string): number {
   return Number.parseInt(value.replace(/[^\d]/g, ""), 10);
@@ -72,8 +69,7 @@ function loadSession(): SessionPayload | null {
       "playerId" in unknownPayload &&
       "playerName" in unknownPayload
     ) {
-      const typedPayload = unknownPayload as SessionPayload;
-      return typedPayload;
+      return unknownPayload as SessionPayload;
     }
     return null;
   } catch {
@@ -98,11 +94,11 @@ function mapDomainError(error: unknown): string {
 function operationTitle(type: RoomOperationType): string {
   switch (type) {
     case "add":
-      return "Пополнить";
+      return "Пополнение";
     case "remove":
-      return "Снять";
+      return "Списание";
     case "transfer":
-      return "Перевести";
+      return "Перевод";
     case "toBank":
       return "В банк";
     case "fromBank":
@@ -116,6 +112,32 @@ function operationTitle(type: RoomOperationType): string {
   }
 }
 
+function tabTitle(tab: RoomTab): string {
+  switch (tab) {
+    case "overview":
+      return "Обзор";
+    case "players":
+      return "Игроки";
+    case "actions":
+      return "Действия";
+    case "history":
+      return "История";
+    default:
+      return "Обзор";
+  }
+}
+
+const TABS: RoomTab[] = ["overview", "players", "actions", "history"];
+const OPERATION_TYPES: RoomOperationType[] = [
+  "add",
+  "remove",
+  "transfer",
+  "toBank",
+  "fromBank",
+  "toPool",
+  "fromPool",
+];
+
 export function MonopolyRoomApp() {
   const [roomCodeInput, setRoomCodeInput] = useState(() => generateRoomCode());
   const [playerNameInput, setPlayerNameInput] = useState("");
@@ -125,7 +147,9 @@ export function MonopolyRoomApp() {
   const [currentPlayerName, setCurrentPlayerName] = useState<string | null>(null);
   const [roomState, setRoomState] = useState<RoomState | null>(null);
 
-  const [dialog, setDialog] = useState<DialogState | null>(null);
+  const [activeTab, setActiveTab] = useState<RoomTab>("overview");
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
+  const [selectedOperationType, setSelectedOperationType] = useState<RoomOperationType>("add");
   const [amountInput, setAmountInput] = useState("100");
   const [recipientPlayerId, setRecipientPlayerId] = useState("");
 
@@ -137,12 +161,42 @@ export function MonopolyRoomApp() {
     [currentPlayerId, roomState],
   );
 
+  const players = useMemo(() => Object.values(roomState?.players ?? {}), [roomState]);
+
+  const activeOperationPlayerId = useMemo(() => {
+    if (!roomState) {
+      return "";
+    }
+
+    if (selectedPlayerId && roomState.players[selectedPlayerId]) {
+      return selectedPlayerId;
+    }
+
+    if (currentPlayerId && roomState.players[currentPlayerId]) {
+      return currentPlayerId;
+    }
+
+    const fallback = Object.keys(roomState.players)[0];
+    return fallback ?? "";
+  }, [currentPlayerId, roomState, selectedPlayerId]);
+
+  const activeOperationPlayer = useMemo(
+    () => (activeOperationPlayerId ? roomState?.players[activeOperationPlayerId] : null),
+    [activeOperationPlayerId, roomState],
+  );
+
   const recipients = useMemo(() => {
-    if (!roomState || !dialog || dialog.type !== "transfer") {
+    if (!roomState || selectedOperationType !== "transfer" || !activeOperationPlayerId) {
       return [];
     }
-    return Object.values(roomState.players).filter((player) => player.id !== dialog.playerId);
-  }, [dialog, roomState]);
+    return Object.values(roomState.players).filter((player) => player.id !== activeOperationPlayerId);
+  }, [activeOperationPlayerId, roomState, selectedOperationType]);
+
+  const visiblePlayers = useMemo(() => players.slice(0, 6), [players]);
+  const hiddenPlayersCount = Math.max(0, players.length - visiblePlayers.length);
+
+  const visibleHistory = useMemo(() => (roomState?.history ?? []).slice(0, 6), [roomState?.history]);
+  const hiddenHistoryCount = Math.max(0, (roomState?.history.length ?? 0) - visibleHistory.length);
 
   const resetTransientMessages = useCallback(() => {
     setMessage(null);
@@ -210,6 +264,8 @@ export function MonopolyRoomApp() {
       setCurrentPlayerId(playerId);
       setCurrentPlayerName(playerNameInput.trim());
       setRoomState(room);
+      setSelectedPlayerId(playerId);
+      setActiveTab("overview");
       persistSession({
         roomCode,
         playerId,
@@ -232,50 +288,13 @@ export function MonopolyRoomApp() {
     setCurrentPlayerId(null);
     setCurrentPlayerName(null);
     setRoomState(null);
-    setDialog(null);
+    setSelectedPlayerId("");
+    setSelectedOperationType("add");
     setRecipientPlayerId("");
     setAmountInput("100");
     setRoomCodeInput(generateRoomCode());
     setMessage("Вы вышли из комнаты.");
   }, [activeRoomCode, currentPlayerId]);
-
-  const openOperationDialog = useCallback((type: RoomOperationType, playerId: string) => {
-    setDialog({ type, playerId });
-    setAmountInput("100");
-    setRecipientPlayerId("");
-    setErrorText(null);
-  }, []);
-
-  const closeOperationDialog = useCallback(() => {
-    setDialog(null);
-    setAmountInput("100");
-    setRecipientPlayerId("");
-  }, []);
-
-  const handleOperationSubmit = useCallback(() => {
-    if (!dialog || !activeRoomCode) {
-      return;
-    }
-
-    const amount = parseAmount(amountInput);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      setErrorText("Введите корректную положительную сумму.");
-      return;
-    }
-
-    try {
-      executeRoomOperation(activeRoomCode, {
-        type: dialog.type,
-        playerId: dialog.playerId,
-        amount,
-        recipientPlayerId: dialog.type === "transfer" ? recipientPlayerId : undefined,
-      });
-      setMessage(`Операция "${operationTitle(dialog.type)}" выполнена.`);
-      closeOperationDialog();
-    } catch (error) {
-      setErrorText(mapDomainError(error));
-    }
-  }, [activeRoomCode, amountInput, closeOperationDialog, dialog, recipientPlayerId]);
 
   const handleCopyRoomCode = useCallback(() => {
     if (!activeRoomCode || !navigator.clipboard) {
@@ -287,14 +306,59 @@ export function MonopolyRoomApp() {
       .catch(() => setErrorText("Не удалось скопировать код."));
   }, [activeRoomCode]);
 
+  const jumpToAction = useCallback((playerId: string, type?: RoomOperationType) => {
+    setSelectedPlayerId(playerId);
+    if (type) {
+      setSelectedOperationType(type);
+    }
+    setActiveTab("actions");
+    setErrorText(null);
+  }, []);
+
+  const handleOperationSubmit = useCallback(() => {
+    if (!activeRoomCode || !activeOperationPlayerId) {
+      return;
+    }
+
+    const amount = parseAmount(amountInput);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setErrorText("Введите корректную положительную сумму.");
+      return;
+    }
+
+    if (selectedOperationType === "transfer" && !recipientPlayerId) {
+      setErrorText("Выберите получателя для перевода.");
+      return;
+    }
+
+    try {
+      executeRoomOperation(activeRoomCode, {
+        type: selectedOperationType,
+        playerId: activeOperationPlayerId,
+        amount,
+        recipientPlayerId: selectedOperationType === "transfer" ? recipientPlayerId : undefined,
+      });
+      setMessage(`Операция "${operationTitle(selectedOperationType)}" выполнена.`);
+      setErrorText(null);
+    } catch (error) {
+      setErrorText(mapDomainError(error));
+    }
+  }, [
+    activeOperationPlayerId,
+    activeRoomCode,
+    amountInput,
+    recipientPlayerId,
+    selectedOperationType,
+  ]);
+
   if (!activeRoomCode || !currentPlayerId || !roomState) {
     return (
       <main className={styles.page}>
         <section className={styles.loginCard}>
-          <p className={styles.badge}>Monopoly PWA</p>
-          <h1 className={styles.title}>Комнатный движок</h1>
+          <p className={styles.badge}>Neon Room</p>
+          <h1 className={styles.title}>Monopoly Engine</h1>
           <p className={styles.subtitle}>
-            Realtime-комната с автообновлением между устройствами. Игроки появляются сразу после входа.
+            Вход в realtime-комнату. После подключения игроки появляются автоматически.
           </p>
 
           <div className={styles.formGroup}>
@@ -310,7 +374,7 @@ export function MonopolyRoomApp() {
               />
               <button
                 type="button"
-                className={styles.ghostButton}
+                className={styles.secondaryButton}
                 onClick={() => setRoomCodeInput(generateRoomCode())}
               >
                 Новый
@@ -331,7 +395,7 @@ export function MonopolyRoomApp() {
           </div>
 
           <button type="button" className={styles.primaryButton} onClick={handleJoinRoom}>
-            Войти в комнату
+            Войти в игру
           </button>
 
           {errorText && <p className={styles.errorText}>{errorText}</p>}
@@ -343,146 +407,223 @@ export function MonopolyRoomApp() {
 
   return (
     <main className={styles.page}>
-      <section className={styles.roomPanel}>
-        <header className={styles.header}>
+      <section className={styles.roomShell}>
+        <header className={styles.topBar}>
           <div>
             <p className={styles.badge}>Комната</p>
-            <h1 className={styles.roomTitle}>{activeRoomCode}</h1>
+            <h1 className={styles.roomCode}>{activeRoomCode}</h1>
             <p className={styles.roomMeta}>
               Игрок: <strong>{currentPlayerName}</strong>
             </p>
           </div>
-          <div className={styles.headerActions}>
-            <button type="button" className={styles.ghostButton} onClick={handleCopyRoomCode}>
-              Копировать код
+          <div className={styles.topActions}>
+            <button type="button" className={styles.secondaryButton} onClick={handleCopyRoomCode}>
+              Код
             </button>
-            <button type="button" className={styles.ghostButton} onClick={handleLeaveRoom}>
+            <button type="button" className={styles.secondaryButton} onClick={handleLeaveRoom}>
               Выйти
             </button>
           </div>
         </header>
 
-        <section className={styles.fundsGrid}>
-          <article className={styles.fundCard}>
-            <h2>Банк</h2>
-            <p>{formatMoney(roomState.bank)}</p>
+        <section className={styles.statsGrid}>
+          <article className={styles.statCard}>
+            <span>Банк</span>
+            <strong>{formatMoney(roomState.bank)}</strong>
           </article>
-          <article className={styles.fundCard}>
-            <h2>Общак</h2>
-            <p>{formatMoney(roomState.pool)}</p>
+          <article className={styles.statCard}>
+            <span>Общак</span>
+            <strong>{formatMoney(roomState.pool)}</strong>
           </article>
-          <article className={styles.fundCard}>
-            <h2>Ваш баланс</h2>
-            <p>{currentPlayer ? formatMoney(currentPlayer.balance) : "—"}</p>
+          <article className={styles.statCard}>
+            <span>Мой баланс</span>
+            <strong>{currentPlayer ? formatMoney(currentPlayer.balance) : "—"}</strong>
           </article>
         </section>
 
-        <section className={styles.section}>
-          <h2>Игроки ({Object.keys(roomState.players).length})</h2>
-          <div className={styles.playersGrid}>
-            {Object.values(roomState.players).map((player) => (
-              <article key={player.id} className={styles.playerCard}>
-                <div className={styles.playerHead}>
-                  <h3>{player.name}</h3>
-                  <p className={styles.playerBalance}>{formatMoney(player.balance)}</p>
-                </div>
-                <div className={styles.actionGrid}>
-                  <button type="button" onClick={() => openOperationDialog("add", player.id)}>
-                    +$
-                  </button>
-                  <button type="button" onClick={() => openOperationDialog("remove", player.id)}>
-                    -$
-                  </button>
-                  <button type="button" onClick={() => openOperationDialog("transfer", player.id)}>
-                    →
-                  </button>
-                  <button type="button" onClick={() => openOperationDialog("toBank", player.id)}>
-                    В банк
-                  </button>
-                  <button type="button" onClick={() => openOperationDialog("fromBank", player.id)}>
-                    Из банка
-                  </button>
-                  <button type="button" onClick={() => openOperationDialog("toPool", player.id)}>
-                    В общак
-                  </button>
-                  <button type="button" onClick={() => openOperationDialog("fromPool", player.id)}>
-                    Из общака
-                  </button>
-                </div>
-              </article>
-            ))}
+        <section className={styles.tabBody}>
+          <div className={styles.tabHeader}>
+            <h2>{tabTitle(activeTab)}</h2>
+            {activeTab === "players" && hiddenPlayersCount > 0 && <span>+{hiddenPlayersCount} игроков</span>}
+            {activeTab === "history" && hiddenHistoryCount > 0 && <span>+{hiddenHistoryCount} записей</span>}
           </div>
-        </section>
 
-        <section className={styles.section}>
-          <h2>История операций</h2>
-          <ul className={styles.historyList}>
-            {roomState.history.length === 0 && <li className={styles.emptyState}>Операций пока нет.</li>}
-            {roomState.history.map((item) => (
-              <li key={item.id} className={styles.historyItem}>
-                <div>
-                  <p>{item.description}</p>
-                  <span>{new Date(item.timestamp).toLocaleTimeString("ru-RU")}</span>
-                </div>
-                <strong>
-                  {operationSign(item.type)}
-                  {formatMoney(item.amount)}
-                </strong>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        {message && <p className={styles.messageText}>{message}</p>}
-        {errorText && <p className={styles.errorText}>{errorText}</p>}
-      </section>
-
-      {dialog && (
-        <div className={styles.overlay}>
-          <div className={styles.modal}>
-            <h2>{operationTitle(dialog.type)}</h2>
-            <p className={styles.modalCaption}>Игрок: {roomState.players[dialog.playerId]?.name ?? "—"}</p>
-
-            <label htmlFor="amount">Сумма</label>
-            <input
-              id="amount"
-              className={styles.input}
-              value={amountInput}
-              onChange={(event) => setAmountInput(event.target.value)}
-              inputMode="numeric"
-              placeholder="100"
-            />
-
-            {dialog.type === "transfer" && (
-              <>
-                <label htmlFor="recipient">Получатель</label>
-                <select
-                  id="recipient"
-                  className={styles.input}
-                  value={recipientPlayerId}
-                  onChange={(event) => setRecipientPlayerId(event.target.value)}
-                >
-                  <option value="">Выберите игрока</option>
-                  {recipients.map((recipient) => (
-                    <option key={recipient.id} value={recipient.id}>
-                      {recipient.name}
-                    </option>
-                  ))}
-                </select>
-              </>
-            )}
-
-            <div className={styles.inlineActions}>
-              <button type="button" className={styles.ghostButton} onClick={closeOperationDialog}>
-                Отмена
+          {activeTab === "overview" && (
+            <div className={styles.overviewGrid}>
+              <button type="button" className={styles.neonCard} onClick={() => jumpToAction(currentPlayerId, "add")}>
+                <span>Быстрое действие</span>
+                <strong>Пополнить себя</strong>
               </button>
-              <button type="button" className={styles.primaryButton} onClick={handleOperationSubmit}>
-                Подтвердить
+              <button
+                type="button"
+                className={styles.neonCard}
+                onClick={() => jumpToAction(currentPlayerId, "toBank")}
+              >
+                <span>Быстрое действие</span>
+                <strong>Перевести в банк</strong>
+              </button>
+              <button
+                type="button"
+                className={styles.neonCard}
+                onClick={() => jumpToAction(currentPlayerId, "toPool")}
+              >
+                <span>Быстрое действие</span>
+                <strong>Скинуть в общак</strong>
+              </button>
+              <button type="button" className={styles.neonCard} onClick={() => setActiveTab("players")}>
+                <span>Навигация</span>
+                <strong>Открыть список игроков</strong>
               </button>
             </div>
-          </div>
-        </div>
-      )}
+          )}
+
+          {activeTab === "players" && (
+            <div className={styles.playersGrid}>
+              {visiblePlayers.map((player) => (
+                <article key={player.id} className={styles.playerCard}>
+                  <div>
+                    <h3>{player.name}</h3>
+                    <p>{formatMoney(player.balance)}</p>
+                  </div>
+                  <div className={styles.inlineActions}>
+                    <button type="button" className={styles.secondaryButton} onClick={() => jumpToAction(player.id, "add")}>
+                      +$
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.secondaryButton}
+                      onClick={() => jumpToAction(player.id, "transfer")}
+                    >
+                      →
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+
+          {activeTab === "actions" && (
+            <div className={styles.actionsStack}>
+              <div className={styles.formGroup}>
+                <label>Игрок</label>
+                <div className={styles.playerSwitch}>
+                  {players.map((player) => (
+                    <button
+                      key={player.id}
+                      type="button"
+                      className={`${styles.switchChip} ${
+                        player.id === activeOperationPlayerId ? styles.switchChipActive : ""
+                      }`}
+                      onClick={() => setSelectedPlayerId(player.id)}
+                    >
+                      {player.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Тип операции</label>
+                <div className={styles.operationGrid}>
+                  {OPERATION_TYPES.map((operationType) => (
+                    <button
+                      key={operationType}
+                      type="button"
+                      className={`${styles.switchChip} ${
+                        selectedOperationType === operationType ? styles.switchChipActive : ""
+                      }`}
+                      onClick={() => setSelectedOperationType(operationType)}
+                    >
+                      {operationTitle(operationType)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label htmlFor="amount">Сумма</label>
+                <input
+                  id="amount"
+                  className={styles.input}
+                  value={amountInput}
+                  onChange={(event) => setAmountInput(event.target.value)}
+                  inputMode="numeric"
+                />
+                <div className={styles.inlineActions}>
+                  {[100, 500, 1000, 5000].map((quickAmount) => (
+                    <button
+                      key={quickAmount}
+                      type="button"
+                      className={styles.secondaryButton}
+                      onClick={() => setAmountInput(String(quickAmount))}
+                    >
+                      {quickAmount}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {selectedOperationType === "transfer" && (
+                <div className={styles.formGroup}>
+                  <label htmlFor="recipient">Получатель</label>
+                  <select
+                    id="recipient"
+                    className={styles.input}
+                    value={recipientPlayerId}
+                    onChange={(event) => setRecipientPlayerId(event.target.value)}
+                  >
+                    <option value="">Выберите игрока</option>
+                    {recipients.map((recipient) => (
+                      <option key={recipient.id} value={recipient.id}>
+                        {recipient.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <button type="button" className={styles.primaryButton} onClick={handleOperationSubmit}>
+                Выполнить: {operationTitle(selectedOperationType)}
+                {activeOperationPlayer ? ` (${activeOperationPlayer.name})` : ""}
+              </button>
+            </div>
+          )}
+
+          {activeTab === "history" && (
+            <ul className={styles.historyList}>
+              {visibleHistory.length === 0 && <li className={styles.emptyState}>Операций пока нет.</li>}
+              {visibleHistory.map((item) => (
+                <li key={item.id} className={styles.historyItem}>
+                  <div>
+                    <p>{item.description}</p>
+                    <span>{new Date(item.timestamp).toLocaleTimeString("ru-RU")}</span>
+                  </div>
+                  <strong>
+                    {operationSign(item.type)}
+                    {formatMoney(item.amount)}
+                  </strong>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {message && <p className={styles.messageText}>{message}</p>}
+          {errorText && <p className={styles.errorText}>{errorText}</p>}
+        </section>
+
+        <nav className={styles.bottomMenu}>
+          {TABS.map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              className={`${styles.bottomMenuItem} ${activeTab === tab ? styles.bottomMenuItemActive : ""}`}
+              onClick={() => setActiveTab(tab)}
+            >
+              {tabTitle(tab)}
+            </button>
+          ))}
+        </nav>
+      </section>
     </main>
   );
 }

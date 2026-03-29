@@ -1,310 +1,401 @@
 .page {
-  min-height: 100vh;
-  padding: 24px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  height: 100dvh;
+  overflow: hidden;
+  padding: 10px;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 10% 10%, rgba(0, 255, 255, 0.16), transparent 34%),
+    radial-gradient(circle at 90% 18%, rgba(255, 0, 170, 0.16), transparent 34%),
+    radial-gradient(circle at 50% 100%, rgba(72, 235, 150, 0.12), transparent 40%),
+    #070b15;
 }
 
 .loginCard,
-.roomPanel {
-  width: min(1024px, 100%);
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(186, 153, 72, 0.25);
-  backdrop-filter: blur(16px);
-  border-radius: 24px;
-  box-shadow: 0 20px 42px rgba(91, 70, 20, 0.12);
+.roomShell {
+  width: min(440px, 100%);
+  height: min(96dvh, 860px);
+  border-radius: 22px;
+  border: 1px solid rgba(0, 255, 229, 0.34);
+  background: linear-gradient(165deg, rgba(12, 18, 34, 0.96) 0%, rgba(8, 11, 22, 0.95) 100%);
+  box-shadow:
+    0 0 0 1px rgba(255, 0, 183, 0.16),
+    0 0 34px rgba(0, 255, 229, 0.18),
+    0 0 56px rgba(255, 0, 183, 0.12);
 }
 
 .loginCard {
-  max-width: 520px;
-  padding: 28px;
+  padding: 20px;
   display: grid;
-  gap: 16px;
+  align-content: center;
+  gap: 14px;
 }
 
-.roomPanel {
-  padding: 24px;
+.roomShell {
   display: grid;
-  gap: 22px;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  padding: 12px;
+  gap: 10px;
 }
 
 .badge {
-  display: inline-flex;
-  background: #f7e2b4;
-  color: #6d4315;
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
   width: fit-content;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #07111f;
+  background: linear-gradient(90deg, #23ffee 0%, #61ffb1 100%);
+  font-weight: 700;
 }
 
 .title,
-.roomTitle {
-  margin-top: 10px;
-  font-size: clamp(28px, 4vw, 38px);
-  line-height: 1.06;
-  color: #2d2418;
+.roomCode {
+  margin: 6px 0 0;
+  color: #effbff;
+  line-height: 1.02;
+  font-size: clamp(22px, 6vw, 32px);
+  text-shadow: 0 0 16px rgba(0, 255, 234, 0.45);
 }
 
 .subtitle,
 .roomMeta {
-  color: #695741;
-  font-size: 15px;
-  line-height: 1.5;
+  color: #a8bed8;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
-.header {
+.roomMeta strong {
+  color: #f4fcff;
+}
+
+.topBar {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px;
 }
 
-.headerActions,
+.topActions,
 .inlineActions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
-.formGroup {
+.statsGrid {
   display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
-.formGroup label,
-.modal label {
-  font-weight: 600;
-  color: #41311c;
-}
-
-.input {
-  width: 100%;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid rgba(124, 97, 45, 0.28);
-  outline: none;
-  background: rgba(255, 251, 240, 0.88);
-  color: #2d2418;
-}
-
-.input:focus {
-  border-color: #bd9134;
-  box-shadow: 0 0 0 3px rgba(189, 145, 52, 0.18);
-}
-
-.primaryButton,
-.ghostButton,
-.actionGrid button {
-  border-radius: 12px;
-  border: 1px solid transparent;
-  padding: 10px 14px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
-}
-
-.primaryButton {
-  background: linear-gradient(135deg, #be9d51 0%, #9e7330 100%);
-  color: #ffffff;
-}
-
-.ghostButton {
-  border-color: rgba(124, 97, 45, 0.35);
-  background: rgba(255, 252, 244, 0.8);
-  color: #59452b;
-}
-
-.primaryButton:hover,
-.ghostButton:hover,
-.actionGrid button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(116, 88, 34, 0.18);
-}
-
-.fundsGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 12px;
-}
-
-.fundCard {
-  background: linear-gradient(135deg, rgba(255, 251, 238, 0.95), rgba(248, 236, 208, 0.9));
-  border: 1px solid rgba(149, 119, 59, 0.2);
+.statCard {
   border-radius: 14px;
-  padding: 14px;
-}
-
-.fundCard h2 {
-  font-size: 15px;
-  color: #705529;
-}
-
-.fundCard p {
-  font-size: 22px;
-  margin-top: 6px;
-  font-weight: 700;
-  color: #2d2418;
-}
-
-.section {
+  border: 1px solid rgba(121, 255, 249, 0.34);
+  background: rgba(17, 26, 47, 0.8);
+  padding: 10px 8px;
   display: grid;
-  gap: 12px;
+  gap: 4px;
 }
 
-.section h2 {
-  font-size: 20px;
-  color: #392911;
+.statCard span {
+  font-size: 10px;
+  color: #90a8c9;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.statCard strong {
+  color: #effbff;
+  font-size: 14px;
+  line-height: 1.15;
+  text-shadow: 0 0 12px rgba(0, 255, 234, 0.3);
+}
+
+.tabBody {
+  min-height: 0;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 0, 183, 0.25);
+  background: rgba(8, 14, 27, 0.86);
+  padding: 10px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.tabHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.tabHeader h2 {
+  margin: 0;
+  color: #f4fdff;
+  font-size: 16px;
+  letter-spacing: 0.02em;
+}
+
+.tabHeader span {
+  color: #8eb9d8;
+  font-size: 12px;
+}
+
+.overviewGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.neonCard {
+  border: 1px solid rgba(0, 255, 234, 0.3);
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(10, 29, 44, 0.95), rgba(9, 18, 34, 0.95));
+  padding: 10px;
+  text-align: left;
+  color: #e7fcff;
+  cursor: pointer;
+  display: grid;
+  gap: 6px;
+}
+
+.neonCard span {
+  color: #92a8c5;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+
+.neonCard strong {
+  font-size: 13px;
+  line-height: 1.25;
+  color: #f0fbff;
 }
 
 .playersGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 12px;
+  gap: 8px;
+  grid-template-columns: 1fr 1fr;
 }
 
 .playerCard {
-  border: 1px solid rgba(140, 108, 48, 0.22);
-  border-radius: 16px;
-  padding: 14px;
-  background: rgba(255, 255, 255, 0.72);
-}
-
-.playerHead {
-  display: flex;
-  justify-content: space-between;
+  border: 1px solid rgba(0, 255, 234, 0.24);
+  border-radius: 12px;
+  padding: 8px;
+  background: rgba(11, 22, 40, 0.76);
+  display: grid;
   gap: 8px;
 }
 
-.playerHead h3 {
-  font-size: 17px;
-  color: #2e1f0c;
+.playerCard h3 {
+  margin: 0;
+  color: #f0fbff;
+  font-size: 13px;
 }
 
-.playerBalance {
-  font-size: 17px;
-  font-weight: 700;
+.playerCard p {
+  margin: 3px 0 0;
+  color: #93ffcf;
+  font-size: 12px;
 }
 
-.actionGrid {
-  margin-top: 10px;
+.actionsStack {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.formGroup {
+  display: grid;
+  gap: 6px;
+}
+
+.formGroup label {
+  color: #b8d0ea;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.playerSwitch,
+.operationGrid {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
-.actionGrid button {
-  background: rgba(248, 240, 220, 0.85);
-  color: #4a3719;
-  border-color: rgba(124, 97, 45, 0.28);
+.switchChip {
+  border-radius: 999px;
+  border: 1px solid rgba(96, 184, 255, 0.3);
+  background: rgba(14, 30, 54, 0.85);
+  color: #cde3fb;
+  padding: 6px 10px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.switchChipActive {
+  border-color: rgba(0, 255, 234, 0.68);
+  background: rgba(0, 255, 234, 0.12);
+  color: #f0ffff;
+  box-shadow: 0 0 15px rgba(0, 255, 234, 0.32);
+}
+
+.input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(98, 173, 255, 0.35);
+  background: rgba(13, 27, 49, 0.9);
+  color: #effbff;
+  padding: 9px 10px;
+  outline: none;
+  font-size: 14px;
+}
+
+.input:focus {
+  border-color: rgba(0, 255, 234, 0.78);
+  box-shadow: 0 0 0 2px rgba(0, 255, 234, 0.18);
+}
+
+.primaryButton,
+.secondaryButton,
+.bottomMenuItem {
+  border-radius: 10px;
+  border: 1px solid transparent;
+  padding: 8px 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+
+.primaryButton {
+  background: linear-gradient(135deg, #00f4dd 0%, #00b9ff 100%);
+  color: #041420;
+}
+
+.secondaryButton {
+  background: rgba(15, 32, 58, 0.88);
+  color: #d1e7ff;
+  border-color: rgba(118, 180, 255, 0.38);
+}
+
+.primaryButton:hover,
+.secondaryButton:hover,
+.bottomMenuItem:hover,
+.switchChip:hover,
+.neonCard:hover {
+  transform: translateY(-1px);
 }
 
 .historyList {
   list-style: none;
+  margin: 0;
+  padding: 0;
   display: grid;
-  gap: 8px;
-  max-height: 280px;
-  overflow: auto;
+  gap: 6px;
 }
 
 .historyItem {
-  border: 1px solid rgba(124, 97, 45, 0.18);
-  border-radius: 12px;
-  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 0, 183, 0.26);
+  background: rgba(24, 16, 41, 0.7);
+  padding: 8px 9px;
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  background: rgba(255, 255, 255, 0.72);
+  gap: 8px;
 }
 
 .historyItem p {
   margin: 0;
-  font-weight: 600;
-  color: #3c2d17;
+  color: #f8ebff;
+  font-size: 12px;
 }
 
 .historyItem span {
-  color: #6d5a3f;
-  font-size: 13px;
+  color: #b79acf;
+  font-size: 11px;
 }
 
 .historyItem strong {
-  color: #422f12;
+  color: #65ffd0;
+  font-size: 12px;
   white-space: nowrap;
 }
 
 .emptyState {
+  border-radius: 10px;
+  border: 1px dashed rgba(96, 184, 255, 0.3);
+  padding: 12px;
   text-align: center;
-  padding: 18px;
-  border: 1px dashed rgba(124, 97, 45, 0.35);
-  border-radius: 12px;
-  color: #614d30;
+  color: #9db7d4;
+  font-size: 12px;
 }
 
 .messageText,
 .errorText {
-  font-size: 14px;
-  padding: 10px 12px;
+  margin: 0;
   border-radius: 10px;
+  padding: 7px 9px;
+  font-size: 12px;
 }
 
 .messageText {
-  background: rgba(224, 246, 220, 0.84);
-  border: 1px solid rgba(58, 137, 68, 0.4);
-  color: #23572b;
+  border: 1px solid rgba(88, 255, 171, 0.4);
+  background: rgba(0, 70, 41, 0.4);
+  color: #b5ffd4;
 }
 
 .errorText {
-  background: rgba(255, 227, 216, 0.84);
-  border: 1px solid rgba(172, 57, 28, 0.35);
-  color: #7f2e16;
+  border: 1px solid rgba(255, 88, 157, 0.5);
+  background: rgba(80, 16, 48, 0.45);
+  color: #ffc1de;
 }
 
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(63, 47, 18, 0.32);
+.bottomMenu {
   display: grid;
-  place-items: center;
-  padding: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
 }
 
-.modal {
-  width: min(480px, 100%);
-  display: grid;
-  gap: 10px;
-  background: #fffdf4;
-  border-radius: 18px;
-  border: 1px solid rgba(124, 97, 45, 0.25);
-  box-shadow: 0 24px 40px rgba(60, 45, 17, 0.2);
-  padding: 18px;
+.bottomMenuItem {
+  padding: 9px 6px;
+  background: rgba(14, 23, 43, 0.94);
+  border: 1px solid rgba(89, 157, 234, 0.36);
+  color: #aac5e1;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
-.modal h2 {
-  color: #2e1f0c;
+.bottomMenuItemActive {
+  background: linear-gradient(135deg, rgba(0, 255, 234, 0.22), rgba(255, 0, 183, 0.24));
+  border-color: rgba(0, 255, 234, 0.74);
+  color: #f1feff;
+  box-shadow: 0 0 14px rgba(0, 255, 234, 0.3);
 }
 
-.modalCaption {
-  color: #705f45;
-}
-
-@media (max-width: 768px) {
+@media (max-width: 390px) {
   .page {
-    padding: 12px;
-    align-items: stretch;
+    padding: 6px;
   }
 
-  .loginCard,
-  .roomPanel {
-    border-radius: 18px;
-    padding: 16px;
+  .roomShell,
+  .loginCard {
+    height: 98dvh;
+    border-radius: 16px;
+    padding: 8px;
   }
 
-  .actionGrid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .playersGrid,
+  .overviewGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .bottomMenuItem {
+    font-size: 10px;
   }
 }
