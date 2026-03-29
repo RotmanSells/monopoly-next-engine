@@ -604,6 +604,17 @@
   background: #d5dce5;
 }
 
+.readonlyHint {
+  border-radius: 10px;
+  border: 1px dashed #d8dee8;
+  background: #f7f9fc;
+  color: var(--text-secondary);
+  padding: 10px 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: center;
+}
+
 .historyItem {
   background: var(--bg-card);
   border-radius: 16px;

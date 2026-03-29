@@ -495,14 +495,17 @@ export function MonopolyRoomApp() {
   }, [activeRoomCode]);
 
   const openOperationModal = useCallback(
-    (playerId: string, type: RoomOperationType) => {
-      setModalPlayerId(playerId);
+    (type: RoomOperationType) => {
+      if (!currentPlayerId) {
+        return;
+      }
+      setModalPlayerId(currentPlayerId);
       setModalOperationType(type);
       setModalAmountInput("0");
       setOperationModalOpen(true);
       setErrorText(null);
     },
-    [],
+    [currentPlayerId],
   );
 
   const closeOperationModal = useCallback(() => {
@@ -529,7 +532,7 @@ export function MonopolyRoomApp() {
   }, []);
 
   const handleOperationSubmit = useCallback(() => {
-    if (!activeRoomCode || !effectiveModalPlayerId) {
+    if (!activeRoomCode || !currentPlayerId) {
       return;
     }
 
@@ -547,10 +550,10 @@ export function MonopolyRoomApp() {
     try {
       executeRoomOperation(activeRoomCode, {
         type: modalOperationType,
-        playerId: effectiveModalPlayerId,
+        playerId: currentPlayerId,
         amount,
         recipientPlayerId: modalOperationType === "transfer" ? effectiveModalRecipientId : undefined,
-      });
+      }, currentPlayerId);
 
       setMessage(`${operationIcon(modalOperationType)} ${operationTitle(modalOperationType)} выполнено`);
       setErrorText(null);
@@ -561,8 +564,8 @@ export function MonopolyRoomApp() {
   }, [
     activeRoomCode,
     closeOperationModal,
-    effectiveModalPlayerId,
     effectiveModalRecipientId,
+    currentPlayerId,
     modalAmountInput,
     modalOperationType,
   ]);
@@ -744,51 +747,57 @@ export function MonopolyRoomApp() {
                         </div>
                       </div>
 
-                      <div className={styles.playerActions}>
-                        <button
-                          type="button"
-                          className={`${styles.actionButton} ${styles.actionButtonAdd}`}
-                          onClick={() => openOperationModal(player.id, "add")}
-                        >
-                          ➕
-                        </button>
-                        <button
-                          type="button"
-                          className={`${styles.actionButton} ${styles.actionButtonRemove}`}
-                          onClick={() => openOperationModal(player.id, "remove")}
-                        >
-                          ➖
-                        </button>
-                        <button
-                          type="button"
-                          className={`${styles.actionButton} ${styles.actionButtonTransfer}`}
-                          onClick={() => openOperationModal(player.id, "transfer")}
-                        >
-                          🔄
-                        </button>
-                        <button
-                          type="button"
-                          className={`${styles.actionButton} ${styles.actionButtonBank}`}
-                          onClick={() => openOperationModal(player.id, "toBank")}
-                        >
-                          🏦
-                        </button>
-                      </div>
+                      {isCurrent ? (
+                        <>
+                          <div className={styles.playerActions}>
+                            <button
+                              type="button"
+                              className={`${styles.actionButton} ${styles.actionButtonAdd}`}
+                              onClick={() => openOperationModal("add")}
+                            >
+                              ➕
+                            </button>
+                            <button
+                              type="button"
+                              className={`${styles.actionButton} ${styles.actionButtonRemove}`}
+                              onClick={() => openOperationModal("remove")}
+                            >
+                              ➖
+                            </button>
+                            <button
+                              type="button"
+                              className={`${styles.actionButton} ${styles.actionButtonTransfer}`}
+                              onClick={() => openOperationModal("transfer")}
+                            >
+                              🔄
+                            </button>
+                            <button
+                              type="button"
+                              className={`${styles.actionButton} ${styles.actionButtonBank}`}
+                              onClick={() => openOperationModal("toBank")}
+                            >
+                              🏦
+                            </button>
+                          </div>
 
-                      <div className={styles.extraActions}>
-                        <button type="button" className={styles.extraButton} onClick={() => openOperationModal(player.id, "toBank")}>
-                          В банк
-                        </button>
-                        <button type="button" className={styles.extraButton} onClick={() => openOperationModal(player.id, "toPool")}>
-                          В общак
-                        </button>
-                        <button type="button" className={styles.extraButton} onClick={() => openOperationModal(player.id, "fromBank")}>
-                          Из банка
-                        </button>
-                        <button type="button" className={styles.extraButton} onClick={() => openOperationModal(player.id, "fromPool")}>
-                          Из общака
-                        </button>
-                      </div>
+                          <div className={styles.extraActions}>
+                            <button type="button" className={styles.extraButton} onClick={() => openOperationModal("toBank")}>
+                              В банк
+                            </button>
+                            <button type="button" className={styles.extraButton} onClick={() => openOperationModal("toPool")}>
+                              В общак
+                            </button>
+                            <button type="button" className={styles.extraButton} onClick={() => openOperationModal("fromBank")}>
+                              Из банка
+                            </button>
+                            <button type="button" className={styles.extraButton} onClick={() => openOperationModal("fromPool")}>
+                              Из общака
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <div className={styles.readonlyHint}>🔒 Игрок управляет своим балансом сам</div>
+                      )}
                     </article>
                   );
                 })}
@@ -858,9 +867,9 @@ export function MonopolyRoomApp() {
                   </div>
                 </div>
                 <div className={styles.profileQuickActions}>
-                  <button type="button" className={styles.profileQuickButton} onClick={() => openOperationModal(currentPlayer.id, "add")}>➕ Пополнить</button>
-                  <button type="button" className={styles.profileQuickButton} onClick={() => openOperationModal(currentPlayer.id, "transfer")}>🔄 Перевести</button>
-                  <button type="button" className={styles.profileQuickButton} onClick={() => openOperationModal(currentPlayer.id, "toBank")}>🏦 В банк</button>
+                  <button type="button" className={styles.profileQuickButton} onClick={() => openOperationModal("add")}>➕ Пополнить</button>
+                  <button type="button" className={styles.profileQuickButton} onClick={() => openOperationModal("transfer")}>🔄 Перевести</button>
+                  <button type="button" className={styles.profileQuickButton} onClick={() => openOperationModal("toBank")}>🏦 В банк</button>
                 </div>
               </article>
             </div>

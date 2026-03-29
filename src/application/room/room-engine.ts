@@ -60,8 +60,17 @@ export function leaveRoom(roomCodeInput: string, playerId: string): RoomState | 
   return appendLeaveEvent(roomCode, playerId);
 }
 
-export function executeRoomOperation(roomCodeInput: string, payload: RoomOperationPayload): RoomState {
+export function executeRoomOperation(
+  roomCodeInput: string,
+  payload: RoomOperationPayload,
+  actorPlayerId?: string,
+): RoomState {
   const roomCode = assertRoomCode(roomCodeInput);
+
+  if (actorPlayerId && payload.playerId !== actorPlayerId) {
+    throw new RoomDomainError("Нельзя выполнять операции за другого игрока.");
+  }
+
   const room = appendOperationEvent(roomCode, payload);
 
   if (!room) {
