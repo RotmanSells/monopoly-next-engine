@@ -1,5 +1,5 @@
 import * as Y from "yjs";
-import { WebrtcProvider } from "y-webrtc";
+import { WebsocketProvider } from "y-websocket";
 import { RoomDomainError } from "@/src/domain/room/errors";
 import {
   addPlayerToRoom,
@@ -10,23 +10,19 @@ import {
 } from "@/src/domain/room/room-rules";
 import { RoomOperationPayload, RoomOperationType, RoomState } from "@/src/domain/room/types";
 
-const DEFAULT_SIGNALING_SERVERS = ["wss://signaling.yjs.dev"];
+const DEFAULT_WEBSOCKET_SERVER = "wss://demos.yjs.dev";
 
-function resolveSignalingServers(): string[] {
-  const configured = process.env.NEXT_PUBLIC_YJS_SIGNALING_SERVERS;
+function resolveWebsocketServer(): string {
+  const configured = process.env.NEXT_PUBLIC_YJS_WEBSOCKET_SERVER;
   if (!configured) {
-    return DEFAULT_SIGNALING_SERVERS;
+    return DEFAULT_WEBSOCKET_SERVER;
   }
 
-  const parsed = configured
-    .split(",")
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0);
-
-  return parsed.length > 0 ? parsed : DEFAULT_SIGNALING_SERVERS;
+  const trimmed = configured.trim();
+  return trimmed.length > 0 ? trimmed : DEFAULT_WEBSOCKET_SERVER;
 }
 
-const SIGNALING_SERVERS = resolveSignalingServers();
+const WEBSOCKET_SERVER = resolveWebsocketServer();
 
 type JoinEvent = {
   id: string;
@@ -62,7 +58,7 @@ type RoomListener = (room: RoomState | null) => void;
 type RoomChannel = {
   roomCode: string;
   doc: Y.Doc;
-  provider: WebrtcProvider;
+  provider: WebsocketProvider;
   events: Y.Array<RoomEvent>;
   listeners: Set<RoomListener>;
 };
@@ -247,9 +243,7 @@ function ensureChannel(roomCode: string): RoomChannel {
   }
 
   const doc = new Y.Doc();
-  const provider = new WebrtcProvider(channelName(roomCode), doc, {
-    signaling: SIGNALING_SERVERS,
-  });
+  const provider = new WebsocketProvider(WEBSOCKET_SERVER, channelName(roomCode), doc);
   const events = doc.getArray<RoomEvent>("events");
 
   const channel: RoomChannel = {
@@ -262,7 +256,8 @@ function ensureChannel(roomCode: string): RoomChannel {
 
   const notify = () => emitChannel(channel);
   events.observe(notify);
-  provider.on("synced", notify);
+  provider.on("sync", notify);
+  provider.on("status", notify);
   channels.set(roomCode, channel);
 
   return channel;

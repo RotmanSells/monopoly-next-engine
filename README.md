@@ -57,12 +57,12 @@ vercel --prod
 
 Синхронизация комнат работает в realtime через WebRTC-меш. Для корпоративных сетей с жёсткими ограничениями WebRTC можно заменить transport-слой на централизованный backend-адаптер (например Firebase/Supabase/Redis API) без изменений бизнес-логики.
 
-### Настройка signaling (опционально)
+### Настройка realtime-сервера (опционально)
 
-По умолчанию используется `wss://signaling.yjs.dev`.
+По умолчанию используется публичный сервер `wss://demos.yjs.dev`.
 
-Если нужно переопределить список signaling-серверов:
+Если нужно использовать свой сервер:
 
 ```bash
-NEXT_PUBLIC_YJS_SIGNALING_SERVERS=wss://your-signal-1.example,wss://your-signal-2.example
+NEXT_PUBLIC_YJS_WEBSOCKET_SERVER=wss://your-realtime.example
 ```
