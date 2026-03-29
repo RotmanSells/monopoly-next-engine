@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useCallback, useEffect, useMemo, useState } from "react";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RoomDomainError } from "@/src/domain/room/errors";
 import { RoomOperationType, RoomPlayer, RoomState } from "@/src/domain/room/types";
 import {
@@ -251,6 +251,7 @@ export function MonopolyRoomApp() {
 
   const [message, setMessage] = useState<string | null>(null);
   const [errorText, setErrorText] = useState<string | null>(null);
+  const hasSeenSyncedRoomRef = useRef(false);
 
   const currentPlayer = useMemo(
     () => (currentPlayerId ? getPlayerById(roomState, currentPlayerId) : null),
@@ -340,20 +341,25 @@ export function MonopolyRoomApp() {
       return;
     }
 
-    const unsubscribe = subscribeToRoom(activeRoomCode, (nextRoom) => {
-      setRoomState(nextRoom);
+    hasSeenSyncedRoomRef.current = false;
 
+    const unsubscribe = subscribeToRoom(activeRoomCode, (nextRoom) => {
       if (!nextRoom) {
+        if (!hasSeenSyncedRoomRef.current) {
+          return;
+        }
         setMessage("Комната очищена. Создайте новую или подключитесь снова.");
         persistSession(null);
         setActiveRoomCode(null);
         setCurrentPlayerId(null);
         setCurrentPlayerName(null);
         setRoomState(null);
-        setPlayerNameInput("");
         setRoomCodeInput(generateRoomCode());
         return;
       }
+
+      hasSeenSyncedRoomRef.current = true;
+      setRoomState(nextRoom);
 
       if (!nextRoom.players[currentPlayerId]) {
         setErrorText("Ваш профиль удалён из комнаты. Перезайдите.");
