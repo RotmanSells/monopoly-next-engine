@@ -10,7 +10,7 @@ import {
 } from "@/src/domain/room/room-rules";
 import { RoomOperationPayload, RoomOperationType, RoomState } from "@/src/domain/room/types";
 
-const DEFAULT_WEBSOCKET_SERVER = "wss://demos.yjs.dev";
+const DEFAULT_WEBSOCKET_SERVER = "wss://demos.yjs.dev/ws";
 
 function resolveWebsocketServer(): string {
   const configured = process.env.NEXT_PUBLIC_YJS_WEBSOCKET_SERVER;

@@ -1,6 +1,5 @@
-const CACHE_NAME = "monopoly-room-cache-v1";
+const CACHE_NAME = "monopoly-room-cache-v2";
 const STATIC_ASSETS = [
-  "/",
   "/manifest.webmanifest",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
@@ -32,32 +31,38 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  const isNavigationRequest = event.request.mode === "navigate";
-  if (isNavigationRequest) {
-    event.respondWith(
-      fetch(event.request).catch(async () => {
-        const cache = await caches.open(CACHE_NAME);
-        return cache.match("/offline.html");
-      }),
-    );
+  const requestUrl = new URL(event.request.url);
+  if (requestUrl.origin !== self.location.origin) {
     return;
   }
 
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
+    (async () => {
+      const isNavigationRequest = event.request.mode === "navigate";
+      const isStaticRequest =
+        requestUrl.pathname.startsWith("/_next/static/") ||
+        STATIC_ASSETS.includes(requestUrl.pathname);
 
-      return fetch(event.request)
-        .then((networkResponse) => {
-          const cloned = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, cloned);
-          });
-          return networkResponse;
-        })
-        .catch(() => caches.match("/offline.html"));
-    }),
+      try {
+        const networkResponse = await fetch(event.request);
+        if (isStaticRequest && networkResponse.ok) {
+          const cache = await caches.open(CACHE_NAME);
+          cache.put(event.request, networkResponse.clone());
+        }
+        return networkResponse;
+      } catch {
+        const cachedResponse = await caches.match(event.request);
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+
+        if (isNavigationRequest) {
+          const cache = await caches.open(CACHE_NAME);
+          return (await cache.match("/offline.html")) ?? Response.error();
+        }
+
+        return Response.error();
+      }
+    })(),
   );
 });
