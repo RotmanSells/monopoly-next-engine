@@ -8,16 +8,16 @@ import {
 
 describe("room-rules", () => {
   it("creates a room with defaults", () => {
-    const room = createRoomState("ABC-123", 1000);
+    const room = createRoomState("1234", 1000);
 
-    expect(room.roomCode).toBe("ABC-123");
+    expect(room.roomCode).toBe("1234");
     expect(room.bank).toBe(20_000);
     expect(room.pool).toBe(0);
     expect(room.history).toHaveLength(0);
   });
 
   it("adds and removes players", () => {
-    const room = createRoomState("ABC-123", 1000);
+    const room = createRoomState("1234", 1000);
     const withPlayer = addPlayerToRoom(room, {
       playerId: "player_1",
       playerName: "Алексей",
@@ -32,7 +32,7 @@ describe("room-rules", () => {
   });
 
   it("executes transfer operation and updates history", () => {
-    let room = createRoomState("ABC-123", 1000);
+    let room = createRoomState("1234", 1000);
     room = addPlayerToRoom(room, { playerId: "p1", playerName: "Игрок 1", now: 1001 });
     room = addPlayerToRoom(room, { playerId: "p2", playerName: "Игрок 2", now: 1002 });
 

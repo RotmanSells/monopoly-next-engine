@@ -15,6 +15,7 @@
 - `public/offline.html`
 - иконки Monopoly в `public/icons`.
 - Светлая тема интерфейса, адаптивная под мобильные.
+- Формат комнаты: `4 цифры` (например, `0427`).
 
 ## Локальный запуск
 
@@ -55,3 +56,13 @@ vercel --prod
 ## Ограничение текущей версии
 
 Синхронизация комнат работает в realtime через WebRTC-меш. Для корпоративных сетей с жёсткими ограничениями WebRTC можно заменить transport-слой на централизованный backend-адаптер (например Firebase/Supabase/Redis API) без изменений бизнес-логики.
+
+### Настройка signaling (опционально)
+
+По умолчанию используется `wss://signaling.yjs.dev`.
+
+Если нужно переопределить список signaling-серверов:
+
+```bash
+NEXT_PUBLIC_YJS_SIGNALING_SERVERS=wss://your-signal-1.example,wss://your-signal-2.example
+```

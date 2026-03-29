@@ -23,6 +23,7 @@ type SessionPayload = {
 };
 
 type RoomTab = "players" | "history" | "profile";
+const ROOM_CODE_REGEX = /^\d{4}$/;
 
 function parseAmount(value: string): number {
   return Number.parseInt(value.replace(/[\D]/g, ""), 10);
@@ -71,10 +72,23 @@ function loadSession(): SessionPayload | null {
       "playerId" in unknownPayload &&
       "playerName" in unknownPayload
     ) {
-      return unknownPayload as SessionPayload;
+      const candidate = unknownPayload as SessionPayload;
+      if (
+        ROOM_CODE_REGEX.test(candidate.roomCode) &&
+        typeof candidate.playerId === "string" &&
+        candidate.playerId.length > 0 &&
+        typeof candidate.playerName === "string" &&
+        candidate.playerName.length > 0
+      ) {
+        return candidate;
+      }
+      sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      return null;
     }
+    sessionStorage.removeItem(SESSION_STORAGE_KEY);
     return null;
   } catch {
+    sessionStorage.removeItem(SESSION_STORAGE_KEY);
     return null;
   }
 }
@@ -162,22 +176,16 @@ function tabEmoji(tab: RoomTab): string {
 }
 
 function sanitizeRoomCode(rawValue: string): string {
-  return rawValue.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+  return rawValue.replace(/\D/g, "").slice(0, 4);
 }
 
 function formatRoomCode(rawValue: string): string {
-  const compact = sanitizeRoomCode(rawValue);
-  if (compact.length <= 3) {
-    return compact;
-  }
-  return `${compact.slice(0, 3)}-${compact.slice(3)}`;
+  return sanitizeRoomCode(rawValue);
 }
 
 function displayRoomCode(rawValue: string): string {
   const compact = sanitizeRoomCode(rawValue);
-  const padded = `${compact}••••••`.slice(0, 6);
-  const value = `${padded.slice(0, 3)}-${padded.slice(3)}`;
-  return value;
+  return `${compact}••••`.slice(0, 4);
 }
 
 function playerEmoji(player: RoomPlayer): string {
@@ -197,7 +205,7 @@ function playerInitial(player: RoomPlayer): string {
 const TABS: RoomTab[] = ["players", "history", "profile"];
 
 export function MonopolyRoomApp() {
-  const [roomCodeInput, setRoomCodeInput] = useState(() => generateRoomCode());
+  const [roomCodeInput, setRoomCodeInput] = useState("0000");
   const [playerNameInput, setPlayerNameInput] = useState("");
 
   const [activeRoomCode, setActiveRoomCode] = useState<string | null>(null);
@@ -231,18 +239,42 @@ export function MonopolyRoomApp() {
   const historyItems = useMemo(() => roomState?.history ?? [], [roomState?.history]);
   const orderedHistoryItems = useMemo(() => [...historyItems].reverse(), [historyItems]);
 
+  const effectiveModalPlayerId = useMemo(() => {
+    if (modalPlayerId && roomState?.players[modalPlayerId]) {
+      return modalPlayerId;
+    }
+
+    if (currentPlayerId && roomState?.players[currentPlayerId]) {
+      return currentPlayerId;
+    }
+
+    return roomState ? (Object.keys(roomState.players)[0] ?? "") : "";
+  }, [currentPlayerId, modalPlayerId, roomState]);
+
   const activeModalPlayer = useMemo(
-    () => (modalPlayerId ? roomState?.players[modalPlayerId] ?? null : null),
-    [modalPlayerId, roomState],
+    () => (effectiveModalPlayerId ? roomState?.players[effectiveModalPlayerId] ?? null : null),
+    [effectiveModalPlayerId, roomState],
   );
 
   const modalRecipients = useMemo(() => {
-    if (!roomState || modalOperationType !== "transfer" || !modalPlayerId) {
+    if (!roomState || modalOperationType !== "transfer" || !effectiveModalPlayerId) {
       return [];
     }
 
-    return Object.values(roomState.players).filter((player) => player.id !== modalPlayerId);
-  }, [modalOperationType, modalPlayerId, roomState]);
+    return Object.values(roomState.players).filter((player) => player.id !== effectiveModalPlayerId);
+  }, [effectiveModalPlayerId, modalOperationType, roomState]);
+
+  const effectiveModalRecipientId = useMemo(() => {
+    if (modalOperationType !== "transfer") {
+      return "";
+    }
+
+    if (modalRecipientId && modalRecipients.some((recipient) => recipient.id === modalRecipientId)) {
+      return modalRecipientId;
+    }
+
+    return modalRecipients[0]?.id ?? "";
+  }, [modalOperationType, modalRecipientId, modalRecipients]);
 
   const modalAmountValue = useMemo(() => {
     const parsed = parseAmount(modalAmountInput);
@@ -260,7 +292,7 @@ export function MonopolyRoomApp() {
     }
 
     if (modalOperationType === "transfer") {
-      const recipient = modalRecipients.find((player) => player.id === modalRecipientId);
+      const recipient = modalRecipients.find((player) => player.id === effectiveModalRecipientId);
       if (recipient) {
         return `${activeModalPlayer.name} → ${recipient.name}`;
       }
@@ -268,7 +300,7 @@ export function MonopolyRoomApp() {
     }
 
     return `Профиль: ${activeModalPlayer.name}`;
-  }, [activeModalPlayer, modalOperationType, modalRecipientId, modalRecipients]);
+  }, [activeModalPlayer, effectiveModalRecipientId, modalOperationType, modalRecipients]);
 
   const resetTransientMessages = useCallback(() => {
     setMessage(null);
@@ -339,45 +371,6 @@ export function MonopolyRoomApp() {
 
     return () => window.clearTimeout(timeout);
   }, [errorText, message]);
-
-  useEffect(() => {
-    if (!roomState) {
-      return;
-    }
-
-    if (modalPlayerId && roomState.players[modalPlayerId]) {
-      return;
-    }
-
-    if (currentPlayerId && roomState.players[currentPlayerId]) {
-      setModalPlayerId(currentPlayerId);
-      return;
-    }
-
-    const fallbackId = Object.keys(roomState.players)[0];
-    if (fallbackId) {
-      setModalPlayerId(fallbackId);
-    }
-  }, [currentPlayerId, modalPlayerId, roomState]);
-
-  useEffect(() => {
-    if (modalOperationType !== "transfer") {
-      setModalRecipientId("");
-      return;
-    }
-
-    if (!modalPlayerId || !roomState) {
-      setModalRecipientId("");
-      return;
-    }
-
-    if (modalRecipientId && roomState.players[modalRecipientId] && modalRecipientId !== modalPlayerId) {
-      return;
-    }
-
-    const fallbackRecipient = Object.values(roomState.players).find((player) => player.id !== modalPlayerId);
-    setModalRecipientId(fallbackRecipient?.id ?? "");
-  }, [modalOperationType, modalPlayerId, modalRecipientId, roomState]);
 
   const handleJoinRoom = useCallback(() => {
     resetTransientMessages();
@@ -472,7 +465,7 @@ export function MonopolyRoomApp() {
   }, []);
 
   const handleOperationSubmit = useCallback(() => {
-    if (!activeRoomCode || !modalPlayerId) {
+    if (!activeRoomCode || !effectiveModalPlayerId) {
       return;
     }
 
@@ -482,7 +475,7 @@ export function MonopolyRoomApp() {
       return;
     }
 
-    if (modalOperationType === "transfer" && !modalRecipientId) {
+    if (modalOperationType === "transfer" && !effectiveModalRecipientId) {
       setErrorText("Выберите получателя для перевода");
       return;
     }
@@ -490,9 +483,9 @@ export function MonopolyRoomApp() {
     try {
       executeRoomOperation(activeRoomCode, {
         type: modalOperationType,
-        playerId: modalPlayerId,
+        playerId: effectiveModalPlayerId,
         amount,
-        recipientPlayerId: modalOperationType === "transfer" ? modalRecipientId : undefined,
+        recipientPlayerId: modalOperationType === "transfer" ? effectiveModalRecipientId : undefined,
       });
 
       setMessage(`${operationIcon(modalOperationType)} ${operationTitle(modalOperationType)} выполнено`);
@@ -504,17 +497,17 @@ export function MonopolyRoomApp() {
   }, [
     activeRoomCode,
     closeOperationModal,
+    effectiveModalPlayerId,
+    effectiveModalRecipientId,
     modalAmountInput,
     modalOperationType,
-    modalPlayerId,
-    modalRecipientId,
   ]);
 
   const handleRoomCodeDigit = useCallback((digit: string) => {
     setRoomCodeInput((current) => {
       const compact = sanitizeRoomCode(current);
-      if (compact.length >= 6) {
-        return formatRoomCode(compact);
+      if (compact.length >= 4) {
+        return compact;
       }
       return formatRoomCode(`${compact}${digit}`);
     });
@@ -576,7 +569,7 @@ export function MonopolyRoomApp() {
             value={formatRoomCode(roomCodeInput)}
             onChange={(event) => setRoomCodeInput(formatRoomCode(event.target.value))}
             placeholder="Или введите код вручную"
-            maxLength={7}
+            maxLength={4}
           />
 
           <input
@@ -862,7 +855,7 @@ export function MonopolyRoomApp() {
                     <button
                       key={recipient.id}
                       type="button"
-                      className={`${styles.recipientItem} ${modalRecipientId === recipient.id ? styles.recipientItemSelected : ""}`}
+                      className={`${styles.recipientItem} ${effectiveModalRecipientId === recipient.id ? styles.recipientItemSelected : ""}`}
                       onClick={() => setModalRecipientId(recipient.id)}
                     >
                       <span className={styles.recipientInfo}>

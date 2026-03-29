@@ -8,21 +8,20 @@ import {
   subscribeToRealtimeRoom,
 } from "@/src/infrastructure/room/realtime-room-store";
 
-const ROOM_CODE_PATTERN = /^[A-Z2-9]{3}-[A-Z2-9]{3}$/;
-const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const ROOM_CODE_PATTERN = /^\d{4}$/;
 
 function normalizeRoomCode(rawValue: string): string {
-  const prepared = rawValue.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
-  if (prepared.length !== 6) {
-    return rawValue.toUpperCase().trim();
+  const prepared = rawValue.replace(/\D/g, "").slice(0, 4);
+  if (prepared.length !== 4) {
+    return rawValue.trim();
   }
-  return `${prepared.slice(0, 3)}-${prepared.slice(3)}`;
+  return prepared;
 }
 
 function assertRoomCode(rawValue: string): string {
   const code = normalizeRoomCode(rawValue);
   if (!ROOM_CODE_PATTERN.test(code)) {
-    throw new RoomDomainError("Код комнаты должен быть формата XXX-XXX.");
+    throw new RoomDomainError("Код комнаты должен быть формата 4 цифры.");
   }
   return code;
 }
@@ -35,15 +34,7 @@ function createPlayerId(): string {
 }
 
 export function generateRoomCode(): string {
-  let first = "";
-  let second = "";
-
-  for (let index = 0; index < 3; index += 1) {
-    first += ROOM_CODE_CHARS[Math.floor(Math.random() * ROOM_CODE_CHARS.length)];
-    second += ROOM_CODE_CHARS[Math.floor(Math.random() * ROOM_CODE_CHARS.length)];
-  }
-
-  return `${first}-${second}`;
+  return String(Math.floor(Math.random() * 10_000)).padStart(4, "0");
 }
 
 export function joinRoom(playerName: string, roomCodeInput: string): {

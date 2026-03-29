@@ -10,11 +10,23 @@ import {
 } from "@/src/domain/room/room-rules";
 import { RoomOperationPayload, RoomOperationType, RoomState } from "@/src/domain/room/types";
 
-const SIGNALING_SERVERS = [
-  "wss://signaling.yjs.dev",
-  "wss://y-webrtc-signaling-eu.herokuapp.com",
-  "wss://y-webrtc-signaling-us.herokuapp.com",
-];
+const DEFAULT_SIGNALING_SERVERS = ["wss://signaling.yjs.dev"];
+
+function resolveSignalingServers(): string[] {
+  const configured = process.env.NEXT_PUBLIC_YJS_SIGNALING_SERVERS;
+  if (!configured) {
+    return DEFAULT_SIGNALING_SERVERS;
+  }
+
+  const parsed = configured
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+
+  return parsed.length > 0 ? parsed : DEFAULT_SIGNALING_SERVERS;
+}
+
+const SIGNALING_SERVERS = resolveSignalingServers();
 
 type JoinEvent = {
   id: string;
