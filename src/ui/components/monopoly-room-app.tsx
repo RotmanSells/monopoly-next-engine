@@ -265,6 +265,16 @@ export function MonopolyRoomApp() {
     [players],
   );
 
+  const orderedPlayers = useMemo(() => {
+    if (!currentPlayerId) {
+      return sortedPlayers;
+    }
+
+    const current = sortedPlayers.find((player) => player.id === currentPlayerId);
+    const others = sortedPlayers.filter((player) => player.id !== currentPlayerId);
+    return current ? [current, ...others] : others;
+  }, [currentPlayerId, sortedPlayers]);
+
   const historyItems = useMemo(() => roomState?.history ?? [], [roomState?.history]);
   const orderedHistoryItems = useMemo(() => [...historyItems].reverse(), [historyItems]);
 
@@ -501,12 +511,17 @@ export function MonopolyRoomApp() {
   }, [activeRoomCode]);
 
   const openOperationModal = useCallback(
-    (type: RoomOperationType) => {
+    (type: RoomOperationType, recipientPlayerId?: string) => {
       if (!currentPlayerId) {
         return;
       }
       setModalPlayerId(currentPlayerId);
       setModalOperationType(type);
+      if (type === "transfer") {
+        setModalRecipientId(recipientPlayerId ?? "");
+      } else {
+        setModalRecipientId("");
+      }
       setModalAmountInput("0");
       setOperationModalOpen(true);
       setErrorText(null);
@@ -596,6 +611,33 @@ export function MonopolyRoomApp() {
   const handleRoomCodeConfirm = useCallback(() => {
     setRoomCodeInput((current) => formatRoomCode(current));
   }, []);
+
+  const handleTakeAllFromPool = useCallback(() => {
+    if (!activeRoomCode || !currentPlayerId || !roomState) {
+      return;
+    }
+
+    if (roomState.pool <= 0) {
+      setMessage("В общаке нет денег");
+      return;
+    }
+
+    try {
+      executeRoomOperation(
+        activeRoomCode,
+        {
+          type: "fromPool",
+          playerId: currentPlayerId,
+          amount: roomState.pool,
+        },
+        currentPlayerId,
+      );
+      setMessage(`Из общака начислено ${formatMoney(roomState.pool)}`);
+      setErrorText(null);
+    } catch (error) {
+      setErrorText(mapDomainError(error));
+    }
+  }, [activeRoomCode, currentPlayerId, roomState]);
 
   if (!activeRoomCode || !currentPlayerId || !roomState) {
     return (
@@ -725,7 +767,7 @@ export function MonopolyRoomApp() {
             <div className={styles.playersSection}>
               <div className={styles.sectionTitle}>Профили игроков</div>
               <div className={styles.playerList}>
-                {sortedPlayers.map((player) => {
+                {orderedPlayers.map((player) => {
                   const isCurrent = player.id === currentPlayerId;
                   const balanceClass = player.balance < 0 ? styles.balanceAmountNegative : "";
 
@@ -755,37 +797,6 @@ export function MonopolyRoomApp() {
 
                       {isCurrent ? (
                         <>
-                          <div className={styles.playerActions}>
-                            <button
-                              type="button"
-                              className={`${styles.actionButton} ${styles.actionButtonAdd}`}
-                              onClick={() => openOperationModal("add")}
-                            >
-                              ➕
-                            </button>
-                            <button
-                              type="button"
-                              className={`${styles.actionButton} ${styles.actionButtonRemove}`}
-                              onClick={() => openOperationModal("remove")}
-                            >
-                              ➖
-                            </button>
-                            <button
-                              type="button"
-                              className={`${styles.actionButton} ${styles.actionButtonTransfer}`}
-                              onClick={() => openOperationModal("transfer")}
-                            >
-                              🔄
-                            </button>
-                            <button
-                              type="button"
-                              className={`${styles.actionButton} ${styles.actionButtonBank}`}
-                              onClick={() => openOperationModal("toBank")}
-                            >
-                              🏦
-                            </button>
-                          </div>
-
                           <div className={styles.extraActions}>
                             <button type="button" className={styles.extraButton} onClick={() => openOperationModal("toBank")}>
                               В банк
@@ -796,13 +807,21 @@ export function MonopolyRoomApp() {
                             <button type="button" className={styles.extraButton} onClick={() => openOperationModal("fromBank")}>
                               Из банка
                             </button>
-                            <button type="button" className={styles.extraButton} onClick={() => openOperationModal("fromPool")}>
+                            <button type="button" className={styles.extraButton} onClick={handleTakeAllFromPool}>
                               Из общака
                             </button>
                           </div>
                         </>
                       ) : (
-                        <div className={styles.readonlyHint}>🔒 Игрок управляет своим балансом сам</div>
+                        <div className={styles.transferQuickRow}>
+                          <button
+                            type="button"
+                            className={`${styles.actionButton} ${styles.actionButtonTransfer} ${styles.transferQuickButton}`}
+                            onClick={() => openOperationModal("transfer", player.id)}
+                          >
+                            🔄 Перевести
+                          </button>
+                        </div>
                       )}
                     </article>
                   );
@@ -873,9 +892,10 @@ export function MonopolyRoomApp() {
                   </div>
                 </div>
                 <div className={styles.profileQuickActions}>
-                  <button type="button" className={styles.profileQuickButton} onClick={() => openOperationModal("add")}>➕ Пополнить</button>
-                  <button type="button" className={styles.profileQuickButton} onClick={() => openOperationModal("transfer")}>🔄 Перевести</button>
                   <button type="button" className={styles.profileQuickButton} onClick={() => openOperationModal("toBank")}>🏦 В банк</button>
+                  <button type="button" className={styles.profileQuickButton} onClick={() => openOperationModal("fromBank")}>💼 Из банка</button>
+                  <button type="button" className={styles.profileQuickButton} onClick={() => openOperationModal("toPool")}>🎯 В общак</button>
+                  <button type="button" className={styles.profileQuickButton} onClick={handleTakeAllFromPool}>🎁 Из общака</button>
                 </div>
               </article>
             </div>

@@ -604,15 +604,16 @@
   background: #d5dce5;
 }
 
-.readonlyHint {
-  border-radius: 10px;
-  border: 1px dashed #d8dee8;
-  background: #f7f9fc;
-  color: var(--text-secondary);
-  padding: 10px 12px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-align: center;
+.transferQuickRow {
+  display: grid;
+}
+
+.transferQuickButton {
+  width: 100%;
+  border-radius: 12px;
+  padding: 12px 10px;
+  font-size: 0.95rem;
+  font-weight: 800;
 }
 
 .historyItem {
