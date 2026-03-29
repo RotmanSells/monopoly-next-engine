@@ -7,7 +7,7 @@
 - Архитектура по слоям:
 - `src/domain` - бизнес-правила комнаты и операций.
 - `src/application` - сценарии join/leave/операции.
-- `src/infrastructure` - localStorage + BroadcastChannel.
+- `src/infrastructure` - realtime sync store (WebRTC + Yjs).
 - `src/ui` - интерфейс и PWA-регистрация.
 - PWA:
 - `app/manifest.ts`
@@ -54,4 +54,4 @@ vercel --prod
 
 ## Ограничение текущей версии
 
-Состояние комнаты хранится локально в браузере (`localStorage`) и синхронизируется между вкладками одного устройства. Для кросс-устройственного мультиплеера нужен внешний backend-адаптер (например Firebase/Supabase/Redis API) в слое `infrastructure`.
+Синхронизация комнат работает в realtime через WebRTC-меш. Для корпоративных сетей с жёсткими ограничениями WebRTC можно заменить transport-слой на централизованный backend-адаптер (например Firebase/Supabase/Redis API) без изменений бизнес-логики.

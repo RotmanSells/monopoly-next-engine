@@ -294,7 +294,7 @@ export function MonopolyRoomApp() {
           <p className={styles.badge}>Monopoly PWA</p>
           <h1 className={styles.title}>Комнатный движок</h1>
           <p className={styles.subtitle}>
-            Локальная комната с синхронизацией между вкладками. Подходит для быстрых игр и офлайн-сценариев.
+            Realtime-комната с автообновлением между устройствами. Игроки появляются сразу после входа.
           </p>
 
           <div className={styles.formGroup}>

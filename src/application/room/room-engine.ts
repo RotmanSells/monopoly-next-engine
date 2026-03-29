@@ -1,16 +1,12 @@
 import { RoomDomainError } from "@/src/domain/room/errors";
-import {
-  addPlayerToRoom,
-  applyRoomOperation,
-  createRoomState,
-  removePlayerFromRoom,
-} from "@/src/domain/room/room-rules";
 import { RoomOperationPayload, RoomState } from "@/src/domain/room/types";
 import {
-  loadRoomState,
-  subscribeToRoomState,
-  updateRoomState,
-} from "@/src/infrastructure/room/local-room-store";
+  appendJoinEvent,
+  appendLeaveEvent,
+  appendOperationEvent,
+  getRealtimeRoomState,
+  subscribeToRealtimeRoom,
+} from "@/src/infrastructure/room/realtime-room-store";
 
 const ROOM_CODE_PATTERN = /^[A-Z2-9]{3}-[A-Z2-9]{3}$/;
 const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -58,13 +54,7 @@ export function joinRoom(playerName: string, roomCodeInput: string): {
   const roomCode = assertRoomCode(roomCodeInput);
   const playerId = createPlayerId();
 
-  const room = updateRoomState(roomCode, (current) => {
-    const base = current ?? createRoomState(roomCode);
-    return addPlayerToRoom(base, {
-      playerId,
-      playerName,
-    });
-  });
+  const room = appendJoinEvent(roomCode, playerId, playerName.trim());
 
   if (!room) {
     throw new RoomDomainError("Не удалось открыть комнату.");
@@ -75,22 +65,12 @@ export function joinRoom(playerName: string, roomCodeInput: string): {
 
 export function leaveRoom(roomCodeInput: string, playerId: string): RoomState | null {
   const roomCode = assertRoomCode(roomCodeInput);
-  return updateRoomState(roomCode, (current) => {
-    if (!current) {
-      return null;
-    }
-    return removePlayerFromRoom(current, playerId);
-  });
+  return appendLeaveEvent(roomCode, playerId);
 }
 
 export function executeRoomOperation(roomCodeInput: string, payload: RoomOperationPayload): RoomState {
   const roomCode = assertRoomCode(roomCodeInput);
-  const room = updateRoomState(roomCode, (current) => {
-    if (!current) {
-      throw new RoomDomainError("Комната не найдена.");
-    }
-    return applyRoomOperation(current, payload);
-  });
+  const room = appendOperationEvent(roomCode, payload);
 
   if (!room) {
     throw new RoomDomainError("Не удалось применить операцию.");
@@ -101,10 +81,10 @@ export function executeRoomOperation(roomCodeInput: string, payload: RoomOperati
 
 export function getRoom(roomCodeInput: string): RoomState | null {
   const roomCode = assertRoomCode(roomCodeInput);
-  return loadRoomState(roomCode);
+  return getRealtimeRoomState(roomCode);
 }
 
 export function subscribeToRoom(roomCodeInput: string, listener: (room: RoomState | null) => void): () => void {
   const roomCode = assertRoomCode(roomCodeInput);
-  return subscribeToRoomState(roomCode, listener);
+  return subscribeToRealtimeRoom(roomCode, listener);
 }
