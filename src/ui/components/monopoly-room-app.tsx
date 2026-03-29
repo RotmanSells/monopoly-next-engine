@@ -144,13 +144,13 @@ function operationTitle(type: RoomOperationType): string {
     case "transfer":
       return "Перевод";
     case "toBank":
-      return "В банк";
+      return "🏦 В банк";
     case "fromBank":
-      return "Из банка";
+      return "💼 Из банка";
     case "toPool":
-      return "В общак";
+      return "🎯 В общак";
     case "fromPool":
-      return "Из общака";
+      return "🎁 Из общака";
     default:
       return "Операция";
   }
@@ -817,16 +817,16 @@ export function MonopolyRoomApp() {
                         <>
                           <div className={styles.extraActions}>
                             <button type="button" className={styles.extraButton} onClick={() => openOperationModal("toBank")}>
-                              В банк
+                              🏦 В банк
                             </button>
                             <button type="button" className={styles.extraButton} onClick={() => openOperationModal("toPool")}>
-                              В общак
+                              🎯 В общак
                             </button>
                             <button type="button" className={styles.extraButton} onClick={() => openOperationModal("fromBank")}>
-                              Из банка
+                              💼 Из банка
                             </button>
                             <button type="button" className={styles.extraButton} onClick={handleTakeAllFromPool}>
-                              Из общака
+                              🎁 Из общака
                             </button>
                           </div>
                         </>
