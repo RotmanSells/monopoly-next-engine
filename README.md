@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Monopoly Room Engine (Next.js + PWA)
 
-## Getting Started
+Готовый к работе движок комнаты Monopoly на Next.js 16 (App Router) с PWA-установкой, локальной синхронизацией между вкладками и подготовкой к деплою на Vercel.
 
-First, run the development server:
+## Что уже реализовано
+
+- Архитектура по слоям:
+- `src/domain` - бизнес-правила комнаты и операций.
+- `src/application` - сценарии join/leave/операции.
+- `src/infrastructure` - localStorage + BroadcastChannel.
+- `src/ui` - интерфейс и PWA-регистрация.
+- PWA:
+- `app/manifest.ts`
+- `public/sw.js`
+- `public/offline.html`
+- иконки Monopoly в `public/icons`.
+- Светлая тема интерфейса, адаптивная под мобильные.
+
+## Локальный запуск
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Открыть: [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Проверки качества
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run lint
+npm run typecheck
+npm run test
+npm run build
+```
 
-## Learn More
+## Деплой на Vercel
 
-To learn more about Next.js, take a look at the following resources:
+1. Убедиться, что изменения закоммичены в ветку `main`.
+2. Подключить репозиторий в Vercel.
+3. Настройки проекта:
+- Framework Preset: `Next.js`
+- Build Command: `npm run build`
+- Output Directory: `.next` (по умолчанию)
+4. Нажать Deploy.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+CLI-вариант:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm i -g vercel
+vercel login
+vercel --prod
+```
 
-## Deploy on Vercel
+## Ограничение текущей версии
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Состояние комнаты хранится локально в браузере (`localStorage`) и синхронизируется между вкладками одного устройства. Для кросс-устройственного мультиплеера нужен внешний backend-адаптер (например Firebase/Supabase/Redis API) в слое `infrastructure`.

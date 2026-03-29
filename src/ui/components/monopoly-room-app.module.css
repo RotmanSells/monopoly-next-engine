@@ -1,0 +1,310 @@
+.page {
+  min-height: 100vh;
+  padding: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.loginCard,
+.roomPanel {
+  width: min(1024px, 100%);
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(186, 153, 72, 0.25);
+  backdrop-filter: blur(16px);
+  border-radius: 24px;
+  box-shadow: 0 20px 42px rgba(91, 70, 20, 0.12);
+}
+
+.loginCard {
+  max-width: 520px;
+  padding: 28px;
+  display: grid;
+  gap: 16px;
+}
+
+.roomPanel {
+  padding: 24px;
+  display: grid;
+  gap: 22px;
+}
+
+.badge {
+  display: inline-flex;
+  background: #f7e2b4;
+  color: #6d4315;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  width: fit-content;
+}
+
+.title,
+.roomTitle {
+  margin-top: 10px;
+  font-size: clamp(28px, 4vw, 38px);
+  line-height: 1.06;
+  color: #2d2418;
+}
+
+.subtitle,
+.roomMeta {
+  color: #695741;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.headerActions,
+.inlineActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.formGroup {
+  display: grid;
+  gap: 8px;
+}
+
+.formGroup label,
+.modal label {
+  font-weight: 600;
+  color: #41311c;
+}
+
+.input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(124, 97, 45, 0.28);
+  outline: none;
+  background: rgba(255, 251, 240, 0.88);
+  color: #2d2418;
+}
+
+.input:focus {
+  border-color: #bd9134;
+  box-shadow: 0 0 0 3px rgba(189, 145, 52, 0.18);
+}
+
+.primaryButton,
+.ghostButton,
+.actionGrid button {
+  border-radius: 12px;
+  border: 1px solid transparent;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.primaryButton {
+  background: linear-gradient(135deg, #be9d51 0%, #9e7330 100%);
+  color: #ffffff;
+}
+
+.ghostButton {
+  border-color: rgba(124, 97, 45, 0.35);
+  background: rgba(255, 252, 244, 0.8);
+  color: #59452b;
+}
+
+.primaryButton:hover,
+.ghostButton:hover,
+.actionGrid button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(116, 88, 34, 0.18);
+}
+
+.fundsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+}
+
+.fundCard {
+  background: linear-gradient(135deg, rgba(255, 251, 238, 0.95), rgba(248, 236, 208, 0.9));
+  border: 1px solid rgba(149, 119, 59, 0.2);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.fundCard h2 {
+  font-size: 15px;
+  color: #705529;
+}
+
+.fundCard p {
+  font-size: 22px;
+  margin-top: 6px;
+  font-weight: 700;
+  color: #2d2418;
+}
+
+.section {
+  display: grid;
+  gap: 12px;
+}
+
+.section h2 {
+  font-size: 20px;
+  color: #392911;
+}
+
+.playersGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.playerCard {
+  border: 1px solid rgba(140, 108, 48, 0.22);
+  border-radius: 16px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.playerHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.playerHead h3 {
+  font-size: 17px;
+  color: #2e1f0c;
+}
+
+.playerBalance {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.actionGrid {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.actionGrid button {
+  background: rgba(248, 240, 220, 0.85);
+  color: #4a3719;
+  border-color: rgba(124, 97, 45, 0.28);
+}
+
+.historyList {
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  max-height: 280px;
+  overflow: auto;
+}
+
+.historyItem {
+  border: 1px solid rgba(124, 97, 45, 0.18);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.historyItem p {
+  margin: 0;
+  font-weight: 600;
+  color: #3c2d17;
+}
+
+.historyItem span {
+  color: #6d5a3f;
+  font-size: 13px;
+}
+
+.historyItem strong {
+  color: #422f12;
+  white-space: nowrap;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 18px;
+  border: 1px dashed rgba(124, 97, 45, 0.35);
+  border-radius: 12px;
+  color: #614d30;
+}
+
+.messageText,
+.errorText {
+  font-size: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+.messageText {
+  background: rgba(224, 246, 220, 0.84);
+  border: 1px solid rgba(58, 137, 68, 0.4);
+  color: #23572b;
+}
+
+.errorText {
+  background: rgba(255, 227, 216, 0.84);
+  border: 1px solid rgba(172, 57, 28, 0.35);
+  color: #7f2e16;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(63, 47, 18, 0.32);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.modal {
+  width: min(480px, 100%);
+  display: grid;
+  gap: 10px;
+  background: #fffdf4;
+  border-radius: 18px;
+  border: 1px solid rgba(124, 97, 45, 0.25);
+  box-shadow: 0 24px 40px rgba(60, 45, 17, 0.2);
+  padding: 18px;
+}
+
+.modal h2 {
+  color: #2e1f0c;
+}
+
+.modalCaption {
+  color: #705f45;
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 12px;
+    align-items: stretch;
+  }
+
+  .loginCard,
+  .roomPanel {
+    border-radius: 18px;
+    padding: 16px;
+  }
+
+  .actionGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
