@@ -6,6 +6,7 @@ import { RoomOperationType, RoomPlayer, RoomState } from "@/src/domain/room/type
 import {
   executeRoomOperation,
   generateRoomCode,
+  getRoom,
   joinRoom,
   leaveRoom,
   resetRoom,
@@ -155,9 +156,9 @@ function operationTitle(type: RoomOperationType): string {
     case "fromBank":
       return "💼 Из банка";
     case "toPool":
-      return "🎯 В общак";
+      return "🎯 В общаг";
     case "fromPool":
-      return "🎁 Из общака";
+      return "🎁 Из общага";
     default:
       return "Операция";
   }
@@ -313,6 +314,7 @@ export function MonopolyRoomApp() {
   const [message, setMessage] = useState<string | null>(null);
   const [errorText, setErrorText] = useState<string | null>(null);
   const hasSeenSyncedRoomRef = useRef(false);
+  const missingCurrentPlayerSinceRef = useRef<number | null>(null);
   const [calcDisplay, setCalcDisplay] = useState("0");
   const [calcStoredValue, setCalcStoredValue] = useState<number | null>(null);
   const [calcPendingOperator, setCalcPendingOperator] = useState<CalculatorOperator | null>(null);
@@ -424,8 +426,9 @@ export function MonopolyRoomApp() {
     }
 
     hasSeenSyncedRoomRef.current = false;
+    missingCurrentPlayerSinceRef.current = null;
 
-    const unsubscribe = subscribeToRoom(activeRoomCode, (nextRoom) => {
+    const applyIncomingRoom = (nextRoom: RoomState | null): void => {
       if (!nextRoom) {
         if (!hasSeenSyncedRoomRef.current) {
           return;
@@ -443,16 +446,58 @@ export function MonopolyRoomApp() {
       hasSeenSyncedRoomRef.current = true;
       setRoomState(nextRoom);
 
-      if (!nextRoom.players[currentPlayerId]) {
-        setErrorText("Ваш профиль удалён из комнаты. Перезайдите.");
-        persistSession(null);
-        setActiveRoomCode(null);
-        setCurrentPlayerId(null);
-        setCurrentPlayerName(null);
+      if (nextRoom.players[currentPlayerId]) {
+        missingCurrentPlayerSinceRef.current = null;
+        return;
       }
+
+      const now = Date.now();
+      const missingSince = missingCurrentPlayerSinceRef.current;
+
+      if (missingSince === null) {
+        missingCurrentPlayerSinceRef.current = now;
+        return;
+      }
+
+      if (now - missingSince < 4_000) {
+        return;
+      }
+
+      setErrorText("Ваш профиль удалён из комнаты. Перезайдите.");
+      persistSession(null);
+      setActiveRoomCode(null);
+      setCurrentPlayerId(null);
+      setCurrentPlayerName(null);
+      missingCurrentPlayerSinceRef.current = null;
+    };
+
+    const unsubscribe = subscribeToRoom(activeRoomCode, (nextRoom) => {
+      applyIncomingRoom(nextRoom);
     });
 
-    return unsubscribe;
+    const refreshFromSnapshot = (): void => {
+      try {
+        const snapshot = getRoom(activeRoomCode);
+        if (!snapshot) {
+          return;
+        }
+        applyIncomingRoom(snapshot);
+      } catch {
+        // Ignore transient polling errors and rely on realtime stream.
+      }
+    };
+
+    refreshFromSnapshot();
+    const pollTimer = window.setInterval(refreshFromSnapshot, 350);
+    window.addEventListener("focus", refreshFromSnapshot);
+    document.addEventListener("visibilitychange", refreshFromSnapshot);
+
+    return () => {
+      window.clearInterval(pollTimer);
+      window.removeEventListener("focus", refreshFromSnapshot);
+      document.removeEventListener("visibilitychange", refreshFromSnapshot);
+      unsubscribe();
+    };
   }, [activeRoomCode, currentPlayerId]);
 
   useEffect(() => {
@@ -1034,13 +1079,13 @@ export function MonopolyRoomApp() {
                               🏦 В банк
                             </button>
                             <button type="button" className={styles.extraButton} onClick={() => openOperationModal("toPool")}>
-                              🎯 В общак
+                              🎯 В общаг
                             </button>
                             <button type="button" className={styles.extraButton} onClick={() => openOperationModal("fromBank")}>
                               💼 Из банка
                             </button>
                             <button type="button" className={styles.extraButton} onClick={handleTakeAllFromPool}>
-                              🎁 Из общака
+                              🎁 Из общага
                             </button>
                           </div>
                         </>
@@ -1233,8 +1278,8 @@ export function MonopolyRoomApp() {
                 <div className={styles.profileQuickActions}>
                   <button type="button" className={styles.profileQuickButton} onClick={() => openOperationModal("toBank")}>🏦 В банк</button>
                   <button type="button" className={styles.profileQuickButton} onClick={() => openOperationModal("fromBank")}>💼 Из банка</button>
-                  <button type="button" className={styles.profileQuickButton} onClick={() => openOperationModal("toPool")}>🎯 В общак</button>
-                  <button type="button" className={styles.profileQuickButton} onClick={handleTakeAllFromPool}>🎁 Из общака</button>
+                  <button type="button" className={styles.profileQuickButton} onClick={() => openOperationModal("toPool")}>🎯 В общаг</button>
+                  <button type="button" className={styles.profileQuickButton} onClick={handleTakeAllFromPool}>🎁 Из общага</button>
                 </div>
               </article>
             </div>
@@ -1319,7 +1364,7 @@ export function MonopolyRoomApp() {
                 Отмена
               </button>
               <button type="button" className={`${styles.modalButton} ${styles.modalButtonConfirm}`} onClick={handleOperationSubmit}>
-                {operationIcon(modalOperationType)} {operationTitle(modalOperationType)}
+                Сумма операции
               </button>
             </footer>
           </div>

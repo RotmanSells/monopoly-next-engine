@@ -679,12 +679,18 @@
 }
 
 .extraButton {
-  border-radius: 10px;
-  padding: 9px 8px;
+  border-radius: 12px;
+  min-height: 48px;
+  padding: 12px 10px;
   background: var(--bg-secondary);
   color: var(--text-primary);
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: 0.88rem;
+  font-weight: 800;
+  line-height: 1.12;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   transition: background-color 0.2s ease;
 }
 
@@ -834,9 +840,15 @@
   border-radius: 12px;
   background: var(--bg-secondary);
   color: var(--text-primary);
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 8px 6px;
+  min-height: 48px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  padding: 12px 10px;
+  line-height: 1.12;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   transition: transform 0.15s ease;
 }
 
@@ -1280,7 +1292,8 @@
 
   .extraButton,
   .profileQuickButton {
-    font-size: 0.72rem;
+    min-height: 44px;
+    font-size: 0.78rem;
   }
 
   .profileQuickActions {
@@ -1418,8 +1431,9 @@
   }
 
   .extraButton {
-    padding: 7px 6px;
-    font-size: 0.72rem;
+    min-height: 44px;
+    padding: 10px 8px;
+    font-size: 0.78rem;
   }
 
   .bottomNav {
@@ -1472,8 +1486,9 @@
   }
 
   .profileQuickButton {
-    padding: 7px 4px;
-    font-size: 0.68rem;
+    min-height: 44px;
+    padding: 10px 8px;
+    font-size: 0.76rem;
   }
 
   .calculatorCard {
@@ -1588,8 +1603,9 @@
   }
 
   .profileQuickButton {
-    font-size: 0.64rem;
-    padding: 6px 4px;
+    min-height: 40px;
+    font-size: 0.72rem;
+    padding: 8px 6px;
   }
 
   .calculatorCard {
@@ -1697,8 +1713,9 @@
   }
 
   .extraButton {
-    font-size: 0.66rem;
-    padding: 6px 4px;
+    min-height: 40px;
+    font-size: 0.72rem;
+    padding: 8px 6px;
   }
 
   .transferQuickButton {
