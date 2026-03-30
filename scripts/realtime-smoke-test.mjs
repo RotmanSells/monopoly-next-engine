@@ -11,6 +11,7 @@ function connectDoc(server, room) {
   const doc = new Y.Doc();
   const provider = new WebsocketProvider(server, room, doc, {
     WebSocketPolyfill: WebSocket,
+    disableBc: true,
   });
 
   return { doc, provider };

@@ -13,7 +13,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:realtime": "node ./scripts/realtime-smoke-test.mjs"
+    "test:realtime": "node ./scripts/realtime-smoke-test.mjs",
+    "test:latency": "node ./scripts/realtime-latency-test.mjs"
   },
   "dependencies": {
     "@y/websocket-server": "0.1.1",

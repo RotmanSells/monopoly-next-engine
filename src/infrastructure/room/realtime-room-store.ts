@@ -12,8 +12,10 @@ import { RoomOperationPayload, RoomOperationType, RoomState } from "@/src/domain
 import { resolveWebsocketServers } from "@/src/infrastructure/room/realtime-config";
 
 const WEBSOCKET_SERVERS = resolveWebsocketServers();
-const FAILOVER_RETRY_THRESHOLD = 2;
-const FAILOVER_MIN_INTERVAL_MS = 1_500;
+const FAILOVER_RETRY_THRESHOLD = 1;
+const FAILOVER_MIN_INTERVAL_MS = 800;
+const PROVIDER_MAX_BACKOFF_MS = 700;
+const PROVIDER_RESYNC_INTERVAL_MS = 4_000;
 
 type JoinEvent = {
   id: string;
@@ -57,6 +59,8 @@ type RoomChannel = {
   failedConnectionEvents: number;
   nextFailoverAllowedAt: number;
   events: Y.Array<RoomEvent>;
+  projectedState: RoomState | null;
+  projectedEventCount: number;
   listeners: Set<RoomListener>;
 };
 
@@ -181,55 +185,81 @@ function channelName(roomCode: string): string {
   return `monopoly-room-${roomCode}`;
 }
 
-function buildRoomStateFromEvents(roomCode: string, events: RoomEvent[]): RoomState | null {
-  if (events.length === 0) {
+function applyEventToRoomState(roomCode: string, state: RoomState | null, event: RoomEvent): RoomState | null {
+  if (event.kind === "join") {
+    const baseState = state ?? createRoomState(roomCode, event.timestamp);
+    return addPlayerToRoom(baseState, {
+      playerId: event.playerId,
+      playerName: event.playerName,
+      initialBalance: event.initialBalance,
+      now: event.timestamp,
+    });
+  }
+
+  if (event.kind === "leave") {
+    if (!state) {
+      return null;
+    }
+    return removePlayerFromRoom(state, event.playerId, event.timestamp);
+  }
+
+  if (!state) {
     return null;
   }
 
-  let room = createRoomState(roomCode, events[0].timestamp);
-
-  for (const event of events) {
-    if (event.kind === "join") {
-      room = addPlayerToRoom(room, {
-        playerId: event.playerId,
-        playerName: event.playerName,
-        initialBalance: event.initialBalance,
-        now: event.timestamp,
-      });
-      continue;
+  try {
+    return applyRoomOperation(state, {
+      type: event.payload.type,
+      playerId: event.payload.playerId,
+      amount: event.payload.amount,
+      recipientPlayerId: event.payload.recipientPlayerId,
+      now: event.timestamp,
+    });
+  } catch (error) {
+    if (error instanceof RoomDomainError) {
+      return state;
     }
+    throw error;
+  }
+}
 
-    if (event.kind === "leave") {
-      room = removePlayerFromRoom(room, event.playerId, event.timestamp);
-      continue;
-    }
-
-    try {
-      room = applyRoomOperation(room, {
-        type: event.payload.type,
-        playerId: event.payload.playerId,
-        amount: event.payload.amount,
-        recipientPlayerId: event.payload.recipientPlayerId,
-        now: event.timestamp,
-      });
-    } catch (error) {
-      if (error instanceof RoomDomainError) {
-        continue;
-      }
-      throw error;
-    }
+// Keeps room projection incremental: only new events are applied after each sync tick.
+function projectChannelState(channel: RoomChannel): RoomState | null {
+  const totalEvents = channel.events.length;
+  if (totalEvents === 0) {
+    channel.projectedState = null;
+    channel.projectedEventCount = 0;
+    return null;
   }
 
-  return room;
+  if (channel.projectedEventCount > totalEvents) {
+    channel.projectedState = null;
+    channel.projectedEventCount = 0;
+  }
+
+  if (channel.projectedEventCount === totalEvents) {
+    return channel.projectedState;
+  }
+
+  const rawDelta = channel.events.slice(channel.projectedEventCount, totalEvents);
+  let state = channel.projectedState;
+
+  for (const rawEvent of rawDelta) {
+    const parsedEvent = parseRoomEvent(rawEvent);
+    if (!parsedEvent) {
+      continue;
+    }
+
+    state = applyEventToRoomState(channel.roomCode, state, parsedEvent);
+  }
+
+  channel.projectedState = state;
+  channel.projectedEventCount = totalEvents;
+  return state;
 }
 
 function emitChannel(channel: RoomChannel): void {
-  const parsedEvents = channel.events
-    .toArray()
-    .map((event) => parseRoomEvent(event))
-    .filter((event): event is RoomEvent => event !== null);
-
-  const state = buildRoomStateFromEvents(channel.roomCode, parsedEvents);
+  const state = projectChannelState(channel);
   channel.listeners.forEach((listener) => listener(state));
 }
 
@@ -247,7 +277,10 @@ function parseProviderStatus(rawStatus: unknown): "connected" | "connecting" | "
 }
 
 function createProvider(serverUrl: string, roomCode: string, doc: Y.Doc): WebsocketProvider {
-  return new WebsocketProvider(serverUrl, channelName(roomCode), doc);
+  return new WebsocketProvider(serverUrl, channelName(roomCode), doc, {
+    maxBackoffTime: PROVIDER_MAX_BACKOFF_MS,
+    resyncInterval: PROVIDER_RESYNC_INTERVAL_MS,
+  });
 }
 
 function maybeRotateProvider(channel: RoomChannel): void {
@@ -352,6 +385,8 @@ function ensureChannel(roomCode: string): RoomChannel {
     failedConnectionEvents: 0,
     nextFailoverAllowedAt: 0,
     events,
+    projectedState: null,
+    projectedEventCount: 0,
     listeners: new Set(),
   };
 
@@ -388,11 +423,7 @@ export function appendJoinEvent(roomCode: string, playerId: string, playerName: 
     channel.events.push([event]);
   });
 
-  const parsedEvents = channel.events
-    .toArray()
-    .map((rawEvent) => parseRoomEvent(rawEvent))
-    .filter((parsed): parsed is RoomEvent => parsed !== null);
-  return buildRoomStateFromEvents(roomCode, parsedEvents);
+  return projectChannelState(channel);
 }
 
 export function appendLeaveEvent(roomCode: string, playerId: string): RoomState | null {
@@ -408,11 +439,7 @@ export function appendLeaveEvent(roomCode: string, playerId: string): RoomState 
     channel.events.push([event]);
   });
 
-  const parsedEvents = channel.events
-    .toArray()
-    .map((rawEvent) => parseRoomEvent(rawEvent))
-    .filter((parsed): parsed is RoomEvent => parsed !== null);
-  return buildRoomStateFromEvents(roomCode, parsedEvents);
+  return projectChannelState(channel);
 }
 
 export function appendOperationEvent(roomCode: string, payload: RoomOperationPayload): RoomState | null {
@@ -433,11 +460,7 @@ export function appendOperationEvent(roomCode: string, payload: RoomOperationPay
     channel.events.push([event]);
   });
 
-  const parsedEvents = channel.events
-    .toArray()
-    .map((rawEvent) => parseRoomEvent(rawEvent))
-    .filter((parsed): parsed is RoomEvent => parsed !== null);
-  return buildRoomStateFromEvents(roomCode, parsedEvents);
+  return projectChannelState(channel);
 }
 
 export function resetRealtimeRoom(roomCode: string): void {
@@ -449,13 +472,12 @@ export function resetRealtimeRoom(roomCode: string): void {
       channel.events.delete(0, totalEvents);
     }
   });
+
+  channel.projectedState = null;
+  channel.projectedEventCount = 0;
 }
 
 export function getRealtimeRoomState(roomCode: string): RoomState | null {
   const channel = ensureChannel(roomCode);
-  const parsedEvents = channel.events
-    .toArray()
-    .map((rawEvent) => parseRoomEvent(rawEvent))
-    .filter((parsed): parsed is RoomEvent => parsed !== null);
-  return buildRoomStateFromEvents(roomCode, parsedEvents);
+  return projectChannelState(channel);
 }

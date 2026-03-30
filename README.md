@@ -94,6 +94,12 @@ pm2 startup systemd -u root --hp /root
 YJS_SERVER_URL=ws://127.0.0.1:1234 npm run test:realtime
 ```
 
+### 5. Проверка задержки репликации
+
+```bash
+YJS_SERVER_URL=ws://127.0.0.1:1234 npm run test:latency
+```
+
 ## Ограничение текущей версии
 
 Синхронизация комнат работает в realtime через публичные websocket-серверы Yjs. Для продакшн-нагрузки рекомендуется использовать собственный websocket backend (или managed realtime сервис) без изменений бизнес-логики.
