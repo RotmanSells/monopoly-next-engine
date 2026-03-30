@@ -9,20 +9,11 @@ import {
   ROOM_BALANCE_DEFAULTS,
 } from "@/src/domain/room/room-rules";
 import { RoomOperationPayload, RoomOperationType, RoomState } from "@/src/domain/room/types";
+import { resolveWebsocketServers } from "@/src/infrastructure/room/realtime-config";
 
-const DEFAULT_WEBSOCKET_SERVER = "wss://demos.yjs.dev/ws";
-
-function resolveWebsocketServer(): string {
-  const configured = process.env.NEXT_PUBLIC_YJS_WEBSOCKET_SERVER;
-  if (!configured) {
-    return DEFAULT_WEBSOCKET_SERVER;
-  }
-
-  const trimmed = configured.trim();
-  return trimmed.length > 0 ? trimmed : DEFAULT_WEBSOCKET_SERVER;
-}
-
-const WEBSOCKET_SERVER = resolveWebsocketServer();
+const WEBSOCKET_SERVERS = resolveWebsocketServers();
+const FAILOVER_RETRY_THRESHOLD = 2;
+const FAILOVER_MIN_INTERVAL_MS = 1_500;
 
 type JoinEvent = {
   id: string;
@@ -59,6 +50,12 @@ type RoomChannel = {
   roomCode: string;
   doc: Y.Doc;
   provider: WebsocketProvider;
+  providerRevision: number;
+  websocketServers: string[];
+  activeServerIndex: number;
+  hasSyncedAtLeastOnce: boolean;
+  failedConnectionEvents: number;
+  nextFailoverAllowedAt: number;
   events: Y.Array<RoomEvent>;
   listeners: Set<RoomListener>;
 };
@@ -236,6 +233,104 @@ function emitChannel(channel: RoomChannel): void {
   channel.listeners.forEach((listener) => listener(state));
 }
 
+function parseProviderStatus(rawStatus: unknown): "connected" | "connecting" | "disconnected" | null {
+  if (!isObjectRecord(rawStatus)) {
+    return null;
+  }
+
+  const candidate = rawStatus.status;
+  if (candidate === "connected" || candidate === "connecting" || candidate === "disconnected") {
+    return candidate;
+  }
+
+  return null;
+}
+
+function createProvider(serverUrl: string, roomCode: string, doc: Y.Doc): WebsocketProvider {
+  return new WebsocketProvider(serverUrl, channelName(roomCode), doc);
+}
+
+function maybeRotateProvider(channel: RoomChannel): void {
+  if (channel.websocketServers.length <= 1) {
+    return;
+  }
+
+  const now = Date.now();
+  if (now < channel.nextFailoverAllowedAt) {
+    return;
+  }
+
+  if (channel.failedConnectionEvents < FAILOVER_RETRY_THRESHOLD) {
+    return;
+  }
+
+  channel.nextFailoverAllowedAt = now + FAILOVER_MIN_INTERVAL_MS;
+  const previousProvider = channel.provider;
+
+  channel.activeServerIndex = (channel.activeServerIndex + 1) % channel.websocketServers.length;
+  channel.providerRevision += 1;
+  channel.provider = createProvider(channel.websocketServers[channel.activeServerIndex], channel.roomCode, channel.doc);
+  channel.hasSyncedAtLeastOnce = false;
+  channel.failedConnectionEvents = 0;
+
+  bindProviderEvents(channel, channel.providerRevision);
+  previousProvider.destroy();
+}
+
+function bindProviderEvents(channel: RoomChannel, revision: number): void {
+  const notifyIfCurrentProvider = () => {
+    if (revision !== channel.providerRevision) {
+      return;
+    }
+    emitChannel(channel);
+  };
+
+  channel.provider.on("sync", (isSynced: unknown) => {
+    if (revision !== channel.providerRevision) {
+      return;
+    }
+
+    if (isSynced === true) {
+      channel.hasSyncedAtLeastOnce = true;
+      channel.failedConnectionEvents = 0;
+    }
+
+    emitChannel(channel);
+  });
+
+  channel.provider.on("status", (event: unknown) => {
+    if (revision !== channel.providerRevision) {
+      return;
+    }
+
+    const status = parseProviderStatus(event);
+    if (status === "connected") {
+      channel.failedConnectionEvents = 0;
+      emitChannel(channel);
+      return;
+    }
+
+    if (status === "disconnected") {
+      channel.failedConnectionEvents += 1;
+      maybeRotateProvider(channel);
+      emitChannel(channel);
+      return;
+    }
+
+    emitChannel(channel);
+  });
+
+  channel.provider.on("connection-error", () => {
+    if (revision !== channel.providerRevision) {
+      return;
+    }
+
+    channel.failedConnectionEvents += 1;
+    maybeRotateProvider(channel);
+    notifyIfCurrentProvider();
+  });
+}
+
 function ensureChannel(roomCode: string): RoomChannel {
   const existing = channels.get(roomCode);
   if (existing) {
@@ -243,21 +338,26 @@ function ensureChannel(roomCode: string): RoomChannel {
   }
 
   const doc = new Y.Doc();
-  const provider = new WebsocketProvider(WEBSOCKET_SERVER, channelName(roomCode), doc);
+  const provider = createProvider(WEBSOCKET_SERVERS[0], roomCode, doc);
   const events = doc.getArray<RoomEvent>("events");
 
   const channel: RoomChannel = {
     roomCode,
     doc,
     provider,
+    providerRevision: 0,
+    websocketServers: [...WEBSOCKET_SERVERS],
+    activeServerIndex: 0,
+    hasSyncedAtLeastOnce: false,
+    failedConnectionEvents: 0,
+    nextFailoverAllowedAt: 0,
     events,
     listeners: new Set(),
   };
 
   const notify = () => emitChannel(channel);
   events.observe(notify);
-  provider.on("sync", notify);
-  provider.on("status", notify);
+  bindProviderEvents(channel, channel.providerRevision);
   channels.set(roomCode, channel);
 
   return channel;

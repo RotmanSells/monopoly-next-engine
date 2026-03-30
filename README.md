@@ -7,7 +7,7 @@
 - Архитектура по слоям:
 - `src/domain` - бизнес-правила комнаты и операций.
 - `src/application` - сценарии join/leave/операции.
-- `src/infrastructure` - realtime sync store (WebRTC + Yjs).
+- `src/infrastructure` - realtime sync store (Yjs + websocket transport).
 - `src/ui` - интерфейс и PWA-регистрация.
 - PWA:
 - `app/manifest.ts`
@@ -57,14 +57,20 @@ vercel --prod
 
 ## Ограничение текущей версии
 
-Синхронизация комнат работает в realtime через WebRTC-меш. Для корпоративных сетей с жёсткими ограничениями WebRTC можно заменить transport-слой на централизованный backend-адаптер (например Firebase/Supabase/Redis API) без изменений бизнес-логики.
+Синхронизация комнат работает в realtime через публичные websocket-серверы Yjs. Для продакшн-нагрузки рекомендуется использовать собственный websocket backend (или managed realtime сервис) без изменений бизнес-логики.
 
 ### Настройка realtime-сервера (опционально)
 
-По умолчанию используется публичный сервер `wss://demos.yjs.dev/ws`.
+По умолчанию используется `wss://demos.yjs.dev` с автоматическим fallback на `wss://demos.yjs.dev/ws`.
 
 Если нужно использовать свой сервер:
 
 ```bash
 NEXT_PUBLIC_YJS_WEBSOCKET_SERVER=wss://your-realtime.example
+```
+
+Можно указать несколько endpoint’ов через запятую, тогда клиент будет переключаться между ними при проблемах соединения:
+
+```bash
+NEXT_PUBLIC_YJS_WEBSOCKET_SERVER=wss://primary.example,wss://backup.example
 ```
