@@ -1,3 +1,8 @@
+:root {
+  --font-body: "Segoe UI", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  --font-heading: "Trebuchet MS", "Avenir Next", "Segoe UI", sans-serif;
+}
+
 html {
   height: 100%;
 }

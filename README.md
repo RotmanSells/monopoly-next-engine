@@ -55,6 +55,45 @@ vercel login
 vercel --prod
 ```
 
+## Self-Hosted (VPS, стабильные комнаты)
+
+Рекомендуемый production-контур:
+
+- `monopoly-web` (Next.js) на `:3000`
+- `monopoly-realtime` (`@y/websocket-server`) на `:1234`
+- `nginx` проксирует HTTP на `:3000`
+
+### 1. Подготовка сервера
+
+```bash
+apt update
+apt install -y curl git nginx
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+apt install -y nodejs
+npm i -g pm2
+```
+
+### 2. Сборка проекта
+
+```bash
+npm ci
+npm run build
+```
+
+### 3. Запуск сервисов
+
+```bash
+NEXT_PUBLIC_YJS_WEBSOCKET_SERVER=ws://YOUR_SERVER_IP:1234 pm2 start ecosystem.config.cjs
+pm2 save
+pm2 startup systemd -u root --hp /root
+```
+
+### 4. Быстрая проверка realtime
+
+```bash
+YJS_SERVER_URL=ws://127.0.0.1:1234 npm run test:realtime
+```
+
 ## Ограничение текущей версии
 
 Синхронизация комнат работает в realtime через публичные websocket-серверы Yjs. Для продакшн-нагрузки рекомендуется использовать собственный websocket backend (или managed realtime сервис) без изменений бизнес-логики.
@@ -62,6 +101,8 @@ vercel --prod
 ### Настройка realtime-сервера (опционально)
 
 По умолчанию используется `wss://demos.yjs.dev` с автоматическим fallback на `wss://demos.yjs.dev/ws`.
+
+Если приложение запущено на VPS без переменной окружения, клиент сначала попробует `ws://<current-host>:1234` (или `wss://` для HTTPS), а затем fallback-серверы.
 
 Если нужно использовать свой сервер:
 

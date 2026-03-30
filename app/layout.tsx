@@ -1,17 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Sans, Space_Grotesk } from "next/font/google";
 import { PwaRegistrar } from "@/src/ui/components/pwa-registrar";
 import "./globals.css";
-
-const bodyFont = DM_Sans({
-  variable: "--font-body",
-  subsets: ["latin"],
-});
-
-const headingFont = Space_Grotesk({
-  variable: "--font-heading",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Monopoly Room Engine",
@@ -36,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru" className={`${bodyFont.variable} ${headingFont.variable}`}>
+    <html lang="ru">
       <body>
         <PwaRegistrar />
         {children}
