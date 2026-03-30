@@ -61,7 +61,7 @@ vercel --prod
 
 - `monopoly-web` (Next.js) на `:3000`
 - `monopoly-realtime` (`@y/websocket-server`) на `:1234`
-- `nginx` проксирует HTTP на `:3000`
+- `nginx` проксирует HTTP на `:3000` и websocket `/yjs` на `:1234`
 
 ### 1. Подготовка сервера
 
@@ -83,7 +83,7 @@ npm run build
 ### 3. Запуск сервисов
 
 ```bash
-NEXT_PUBLIC_YJS_WEBSOCKET_SERVER=ws://YOUR_SERVER_IP:1234 pm2 start ecosystem.config.cjs
+pm2 start ecosystem.config.cjs
 pm2 save
 pm2 startup systemd -u root --hp /root
 ```
@@ -91,13 +91,13 @@ pm2 startup systemd -u root --hp /root
 ### 4. Быстрая проверка realtime
 
 ```bash
-YJS_SERVER_URL=ws://127.0.0.1:1234 npm run test:realtime
+YJS_SERVER_URL=ws://127.0.0.1/yjs npm run test:realtime
 ```
 
 ### 5. Проверка задержки репликации
 
 ```bash
-YJS_SERVER_URL=ws://127.0.0.1:1234 npm run test:latency
+YJS_SERVER_URL=ws://127.0.0.1/yjs npm run test:latency
 ```
 
 ## Ограничение текущей версии
@@ -108,7 +108,7 @@ YJS_SERVER_URL=ws://127.0.0.1:1234 npm run test:latency
 
 По умолчанию используется `wss://demos.yjs.dev` с автоматическим fallback на `wss://demos.yjs.dev/ws`.
 
-Если приложение запущено на VPS без переменной окружения, клиент сначала попробует `ws://<current-host>:1234` (или `wss://` для HTTPS), а затем fallback-серверы.
+Если приложение запущено на VPS без переменной окружения, клиент сначала попробует `ws(s)://<current-host>/yjs`, затем legacy `ws(s)://<current-host>:1234`, и только потом fallback-серверы.
 
 Если нужно использовать свой сервер:
 

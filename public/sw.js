@@ -1,4 +1,4 @@
-const CACHE_NAME = "monopoly-room-cache-v2";
+const CACHE_NAME = "monopoly-room-cache-v3";
 const STATIC_ASSETS = [
   "/manifest.webmanifest",
   "/icons/icon-192.png",
@@ -39,9 +39,7 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     (async () => {
       const isNavigationRequest = event.request.mode === "navigate";
-      const isStaticRequest =
-        requestUrl.pathname.startsWith("/_next/static/") ||
-        STATIC_ASSETS.includes(requestUrl.pathname);
+      const isStaticRequest = STATIC_ASSETS.includes(requestUrl.pathname);
 
       try {
         const networkResponse = await fetch(event.request);

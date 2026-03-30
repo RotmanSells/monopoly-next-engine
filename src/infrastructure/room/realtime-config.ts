@@ -1,6 +1,7 @@
 const DEFAULT_WEBSOCKET_SERVERS = ["wss://demos.yjs.dev", "wss://demos.yjs.dev/ws"] as const;
 const WEBSOCKET_SERVER_SPLITTER = /[\n,]/u;
 const DEFAULT_LOCAL_WEBSOCKET_PORT = "1234";
+const DEFAULT_LOCAL_WEBSOCKET_PATH = "/yjs";
 
 function sanitizeWebsocketServer(rawValue: string): string | null {
   const trimmed = rawValue.trim();
@@ -22,7 +23,10 @@ function sanitizeWebsocketServer(rawValue: string): string | null {
 
 export function normalizeWebsocketServers(rawValue: string | null | undefined): string[] {
   const runtimeServer = resolveRuntimeWebsocketServer();
-  const fallbackServers = runtimeServer ? [runtimeServer, ...DEFAULT_WEBSOCKET_SERVERS] : [...DEFAULT_WEBSOCKET_SERVERS];
+  const runtimeLegacyServer = resolveRuntimeLegacyWebsocketServer();
+  const fallbackServers = runtimeServer
+    ? [runtimeServer, ...(runtimeLegacyServer ? [runtimeLegacyServer] : []), ...DEFAULT_WEBSOCKET_SERVERS]
+    : [...DEFAULT_WEBSOCKET_SERVERS];
 
   if (!rawValue) {
     return fallbackServers;
@@ -49,6 +53,20 @@ export function resolveWebsocketServers(): string[] {
 }
 
 function resolveRuntimeWebsocketServer(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+  const hostname = window.location.hostname;
+  if (!hostname) {
+    return null;
+  }
+
+  return `${protocol}://${hostname}${DEFAULT_LOCAL_WEBSOCKET_PATH}`;
+}
+
+function resolveRuntimeLegacyWebsocketServer(): string | null {
   if (typeof window === "undefined") {
     return null;
   }
