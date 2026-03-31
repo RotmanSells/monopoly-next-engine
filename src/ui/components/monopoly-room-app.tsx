@@ -1075,13 +1075,13 @@ export function MonopolyRoomApp() {
                       {isCurrent ? (
                         <>
                           <div className={styles.extraActions}>
-                            <button type="button" className={styles.extraButton} onClick={() => openOperationModal("toBank")}>
+                            <button type="button" className={`${styles.extraButton} ${styles.actionButtonRemove}`} onClick={() => openOperationModal("toBank")}>
                               🏦 В банк
                             </button>
                             <button type="button" className={styles.extraButton} onClick={() => openOperationModal("toPool")}>
                               🎯 В общаг
                             </button>
-                            <button type="button" className={styles.extraButton} onClick={() => openOperationModal("fromBank")}>
+                            <button type="button" className={`${styles.extraButton} ${styles.actionButtonBank}`} onClick={() => openOperationModal("fromBank")}>
                               💼 Из банка
                             </button>
                             <button type="button" className={styles.extraButton} onClick={handleTakeAllFromPool}>
@@ -1276,8 +1276,8 @@ export function MonopolyRoomApp() {
                   </div>
                 </div>
                 <div className={styles.profileQuickActions}>
-                  <button type="button" className={styles.profileQuickButton} onClick={() => openOperationModal("toBank")}>🏦 В банк</button>
-                  <button type="button" className={styles.profileQuickButton} onClick={() => openOperationModal("fromBank")}>💼 Из банка</button>
+                  <button type="button" className={`${styles.profileQuickButton} ${styles.actionButtonRemove}`} onClick={() => openOperationModal("toBank")}>🏦 В банк</button>
+                  <button type="button" className={`${styles.profileQuickButton} ${styles.actionButtonBank}`} onClick={() => openOperationModal("fromBank")}>💼 Из банка</button>
                   <button type="button" className={styles.profileQuickButton} onClick={() => openOperationModal("toPool")}>🎯 В общаг</button>
                   <button type="button" className={styles.profileQuickButton} onClick={handleTakeAllFromPool}>🎁 Из общага</button>
                 </div>
